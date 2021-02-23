@@ -1,0 +1,3718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>报价计算</title>
+</head>
+<script  type="text/javascript" src="../js/jquery-1.12.4.js"></script>
+<style>
+    .container{
+        width: 100%;
+        height: auto;
+        padding: 0;
+        /*margin: 0 0 0 20%;*/
+        overflow:auto;
+    }
+    .medium_body{
+        width: 100%;
+        height: 640px;
+        margin: 30px 0 0 0;
+        background: rgba(240,240,240,0.8);
+        /*position: relative;*/
+        border: 1px solid black;
+        /*overflow:auto;*/
+    }
+    .medium_head{
+        width: 88%;
+        height: 110px;
+        text-align: center;
+        border: 1px solid black;
+        margin: 1% 0 0 5%;
+    }
+    .medium_main{
+        width: 90%;
+        height: 540px;
+        margin: 0 auto;
+    }
+    .medium_main_left{
+        width: 48%;
+        height: 500px;
+        float: left;
+        font-size: 14px;
+        border: 1px solid black;
+        margin: 5px 5px 0 0;
+    }
+    .select_kind{
+        width: 30%;
+        height: 22px;
+        /*margin: 10px 0 0 30px;*/
+        padding: 0 0 0 7%;
+        /*text-align: center;*/
+        /*text-align-last: center;*/
+        /*margin: 0;*/
+    }
+    .select_kind option{
+        text-align: center;
+        /*text-align-last: center;*/
+
+    }
+    .kuanshi_kind{
+        width: 61%;
+        height: 22px;
+        padding: 0 0 0 12%;
+        margin: 17px 0 0 5px ;
+    }
+    .kuanshi_kind option{
+        text-align: center;
+    }
+    .form_group {
+        height: 50px;
+        width: 90%;
+        /*float: left;*/
+        /*border: 1px solid black;*/
+    }
+    .form_lab {
+        height: 30px;
+        width: 30%;
+        float: left;
+        margin-top: 18px;
+        text-align: right;
+        /*border: 1px solid black;*/
+    }
+    .form_input {
+        height: 30px;
+        width: 55%;
+        margin: 10px 0 0 5px;
+        float: left;
+        border: 2px solid transparent;
+        text-align: center;
+    }
+    .input_sec {
+        height: 20px;
+        width: 30%;
+        margin: 10px 0 0 5px;
+        /*float: left;*/
+        border: 2px solid transparent;
+        text-align: center;
+    }
+    .medium_main_right{
+        width: 48%;
+        height: 500px;
+        float: left;
+        margin: 5px 5px 0 5px;
+        border: 1px solid black;
+    }
+    .gongyi_kind{
+        width: 100%;
+        height: 100px;
+        font-size: 13px;
+        /*border: 1px solid black;*/
+        /*background:white ;*/
+
+        /*-webkit-box-shadow:1px 1px 3px #292929;*/
+        /*-moz-box-shadow:1px 1px 3px #292929;*/
+        /*box-shadow:1px 1px 3px #292929;*/
+    }
+    .mybutton{
+        margin: 10px 0 0 30%;
+    }
+    .mybutton2{
+        margin: 10px 0 0 10px;
+    }
+</style>
+<script type="text/javascript">
+    //toFixed兼容方法，四舍五入
+    Number.prototype.toFixed = function (len) {
+        if (len > 20 || len < 0) {
+            throw new RangeError('toFixed() digits argument must be between 0 and 20');
+        }
+        // .123转为0.123
+        var number = Number(this);
+        if (isNaN(number) || number >= Math.pow(10, 21)) {
+            return number.toString();
+        }
+        if (typeof (len) == 'undefined' || len == 0) {
+            return (Math.round(number)).toString();
+        }
+        var result = number.toString(),
+            numberArr = result.split('.');
+
+        if (numberArr.length < 2) {
+            //整数的情况
+            return padNum(result);
+        }
+        var intNum = numberArr[0], //整数部分
+            deciNum = numberArr[1],//小数部分
+            lastNum = deciNum.substr(len, 1);//最后一个数字
+
+        if (deciNum.length == len) {
+            //需要截取的长度等于当前长度
+            return result;
+        }
+        if (deciNum.length < len) {
+            //需要截取的长度大于当前长度 1.3.toFixed(2)
+            return padNum(result)
+        }
+        //需要截取的长度小于当前长度，需要判断最后一位数字
+        result = intNum + '.' + deciNum.substr(0, len);
+        if (parseInt(lastNum, 10) >= 5) {
+            //最后一位数字大于5，要进位
+            var times = Math.pow(10, len); //需要放大的倍数
+            var changedInt = Number(result.replace('.', ''));//截取后转为整数
+            var fu = 1/changedInt < 0;// 为true 时，则 changedInt < 0 或者 changedInt = -0,否则为正数或等于0
+            if(fu){
+                changedInt--;//整数进位
+            }else{
+                changedInt++;//整数进位
+            }
+            changedInt /= times;//整数转为小数，注：有可能还是整数
+            result = padNum(changedInt + '');
+        }
+        return result;
+        //对数字末尾加0
+        function padNum(num) {
+            var dotPos = num.indexOf('.');
+            if (dotPos === -1) {
+                //整数的情况
+                num += '.';
+                for (var i = 0; i < len; i++) {
+                    num += '0';
+                }
+                return num;
+            } else {
+                //小数的情况
+                var need = len - (num.length - dotPos - 1);
+                for (var j = 0; j < need; j++) {
+                    num += '0';
+                }
+                return num;
+            }
+        }
+    };
+    function show_price1() {
+        var dzxh = document.getElementsByName('material');  //袋子型号
+        var yinshua1 = document.getElementsByName('yinshua1');
+        var yinshua_color1 = document.getElementsByName('yinshua_color1');
+        var yinshua_kind = document.getElementsByName('yinshua_kind1');
+        var kuanshi1 =  parseInt(document.getElementById('kuanshi1').value);
+        var dzxh_num = 0;//袋子型号价格
+        var dzxh_kind = 0;//袋子型号
+        var yinshua_num = 0;
+        var yinshua_color_num = 0;
+        var yinshua_kind_num = 0;//普通印刷 天晨
+        var number1 = parseInt(document.getElementById('number1').value);
+        var lirun1 = document.getElementById('lirun1').value;
+        // alert('kuanshi. = ' + kuanshi);
+        //获取袋子型号
+        for(var i= 0;i<dzxh.length;i++){
+            if (dzxh[i].checked==true){
+                dzxh_kind = dzxh[i].value;
+                alert('dzxh. = ' + dzxh_kind);
+                break;
+            }else{
+                if(i==dzxh.length-1){
+                    // alert('袋子型号未选择.');
+                    return false;
+                }
+            }
+        }
+        if (kuanshi1 == 4){
+            if (dzxh_kind == 1){
+                dzxh_num = 0.51;
+            }else if (dzxh_kind == 2){
+                dzxh_num = 0.61;
+            }else {
+                dzxh_num = 0.75;
+            }
+        }else if (kuanshi1 == 3){
+            if (dzxh_kind == 1){
+                dzxh_num = 0.17;
+            }else if (dzxh_kind == 2){
+                dzxh_num = 0.19;
+            }else if (dzxh_kind == 3){
+                dzxh_num = 0.24;
+            }else if (dzxh_kind == 4){
+                dzxh_num = 0.32;
+            }else {
+                dzxh_num = 0.4;
+            }
+        }else if (kuanshi1 == 2){
+            if (dzxh_kind == 1){
+                dzxh_num = 0.28;
+            }else if (dzxh_kind == 2){
+                dzxh_num = 0.34;
+            }else if (dzxh_kind == 3) {
+                dzxh_num = 0.42;
+            }
+        }else {
+            if (dzxh_kind == 1){
+                dzxh_num = 0.4;
+            }else if (dzxh_kind == 2){
+                dzxh_num = 0.48;
+            }else {
+                dzxh_num = 0.59;
+            }
+        }
+        alert('dzxh_num = ' + dzxh_num);
+        //获取印刷种类代号
+        for(var i= 0;i<yinshua_kind.length;i++){
+            if (yinshua_kind[i].checked==true){
+                yinshua_kind_num = yinshua_kind[i].value;
+                // alert(yinshua_kind_num);
+                break;
+            }else{
+                if(i==yinshua_kind.length-1){
+                    // alert('印刷种类未选择.');
+                    return false;
+                }
+            }
+        }
+        //获取印刷面数代号
+        for(var i= 0;i<yinshua1.length;i++){
+            if (yinshua1[i].checked==true){
+                yinshua_num = yinshua1[i].value;
+                break;
+            }else{
+                if(i==yinshua1.length-1){
+
+                }
+            }
+        }
+        //获取印刷颜色代号
+        for(var i= 0;i<yinshua_color1.length;i++){
+            if (yinshua_color1[i].checked==true){
+                yinshua_color_num = yinshua_color1[i].value;
+                // alert("color = " + yinshua_color_num);
+                break;
+            }else{
+                if(i==yinshua_color1.length-1){
+
+                }
+            }
+        }
+
+        var lirun_num = 0;   //利润
+        var stjc_num = 0;   //手提加长
+        var ddbz_num = 0; //单独包装
+        var niukou_num = 0; //纽扣
+        var yunfei_num = 0;//运费
+        var zhixiang_num = 0;//纸箱
+        var ptfp_num = 0;//普通发票
+        var ptfp_dian = 0.01;//普通发票
+        var zyfp_num = 0;//专用发票
+        var qita_num = 0;//其他
+
+        var stjc = document.getElementById('stjc1');
+        var niukou = document.getElementById('niukou1');
+        var ddbz = document.getElementById('ddbz1');
+        var zhongliang = document.getElementById('zhongliang1');
+        var kddj = document.getElementById('kddj1');
+        var yunfei = document.getElementById('yunfei1');
+        var zhixiang = document.getElementById('zhixiang1');
+        var ptfp = document.getElementById('ptfp1');
+        var zyfp = document.getElementById('zyfp1');
+        var qita = document.getElementById('qita');
+
+        var ddbz_input = parseFloat(document.getElementById('ddbz_input1').value);
+        var niukou_input = parseFloat(document.getElementById('niukou_input1').value);
+        var yunfei_input = parseFloat(document.getElementById('yunfei_input1').value);
+        var zhixiang_input = parseFloat(document.getElementById('zhixiang_input1').value);
+        var zyfp_input = parseFloat(document.getElementById('zyfp_input1').value);
+        var qita_input = parseFloat(document.getElementById('qita_input1').value);
+
+
+        if (lirun1 == undefined || lirun1 == null || lirun1 == ''){
+            lirun_num = 0;
+        } else {
+            lirun_num = parseFloat(lirun1);
+        }
+        if (stjc.checked == true){
+            var jiachang = document.getElementsByName('jiachang1');  //加长长度
+            for(var i= 0;i<jiachang.length;i++){
+                if (jiachang[i].checked==true){
+                    stjc_num = parseFloat(jiachang[i].value);
+                    // alert("stjc_num = " +stjc_num);
+                    break;
+                }else{
+                    if(i==jiachang.length-1){
+                        // alert('加长长度未选择.');
+                    }
+                }
+            }
+        }
+        if (ddbz.checked == true){
+            ddbz_num = ddbz_input;
+            // alert("ddbz = " + ddbz_num);
+        }
+        if (niukou.checked == true){
+            niukou_num = niukou_input;
+            // alert("niukou_num = " + niukou_num);
+        }
+        if (yunfei.checked == true){
+            yunfei_num = yunfei_input;
+            // alert("yunfei_num = " + yunfei_num);
+        }
+        if (zhixiang.checked == true){
+            zhixiang_num = zhixiang_input;
+            // alert("zhixiang_num = " + zhixiang_num);
+        }
+
+        if (qita.checked == true){
+            qita_num = qita_input;
+            // alert("qita_num = " + qita_num);
+        }
+
+        //印刷价格
+        var yinshua_price = 0;
+        if(kuanshi1 == 4){//覆膜
+            if (yinshua_num == "2"){
+               if (yinshua_color_num == 2){
+                    if (number1 <= 500) {
+                        yinshua_price = 230;
+                    }else {
+                        yinshua_price = number1 * 0.4 + 30;
+                    }
+                }else {
+                    if (number1 <= 500) {
+                        yinshua_price = 120;
+                    }else {
+                        yinshua_price = number1 * 0.2 + 20;
+                    }
+                }
+            }else {
+               if (yinshua_color_num == 2){
+                    if (number1 <= 500) {
+                        yinshua_price = 120;
+                    }else {
+                        yinshua_price = number1 * 0.2 + 20;
+                    }
+                }else {
+                    if (number1 <= 500) {
+                        yinshua_price = 60;
+                    }else {
+                        yinshua_price = number1 * 0.1 + 10;
+                    }
+                }
+
+            }
+        }else {//覆膜之外
+            if (yinshua_kind_num == 1){
+                if (yinshua_num == "2"){
+                    if (yinshua_color_num == 3){
+                        if (number1 <= 300) {
+                            yinshua_price = 330;
+                        }else {
+                            yinshua_price = number1 * 0.6 + 30;
+                        }
+                    }else if (yinshua_color_num == 2){
+                        if (number1 <= 300) {
+                            yinshua_price = 220;
+                        }else {
+                            yinshua_price = number1 * 0.4 + 20;
+                        }
+                    }else {
+                        if (number1 <= 300) {
+                            yinshua_price = 60;
+                        }else {
+                            yinshua_price = number1 * 0.14 + 10;
+                        }
+                    }
+                }else {
+                    if (yinshua_color_num == 3){
+                        if (number1 <= 600) {
+                            yinshua_price = 180;
+                        }else {
+                            yinshua_price = number1 * 0.3 + 30;
+                        }
+                    }else if (yinshua_color_num == 2){
+                        if (number1 <= 600) {
+                            yinshua_price = 120;
+                        }else {
+                            yinshua_price = number1 * 0.2 + 20;
+                        }
+                    }else {
+                        if (number1 <= 600) {
+                            yinshua_price = 60;
+                        }else {
+                            yinshua_price = number1 * 0.07 + 10;
+                        }
+                    }
+
+                }
+            } else {//天晨
+                if (yinshua_color_num == 2){
+                    if (number1 <= 10000) {
+                        yinshua_price = 1250;
+                    }else {
+                        yinshua_price = Number(number1) * 0.12;
+                    }
+                }else {
+                    if (number1 <= 5000) {
+                        yinshua_price = 500;
+                    }else if (number1 >= 5001 && number1 <= 10000) {
+                        yinshua_price = 700;
+                    }else {
+                        yinshua_price = Number(number1) * 0.07;
+                    }
+                }
+            }
+        }
+
+
+        yinshua_price = yinshua_price / Number(number1);
+        yunfei_num = yunfei_num / Number(number1);
+        // alert("yinshua_price = " + yinshua_price);
+        var danjia1 = parseFloat(Number(dzxh_num) + Number(yinshua_price) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(stjc_num) + Number(lirun_num) + Number(qita_num)).toFixed(10);
+        // alert("danjia1 = " + danjia1);
+        if (ptfp.checked == true){
+            var ptfp_input = document.getElementById('ptfp_input1').value;
+            // alert("input = " + ptfp_input);
+            if (ptfp_input == undefined || ptfp_input == null || ptfp_input == ''){
+                // alert("kong = " + ptfp_dian);
+                ptfp_num =  danjia1 * ptfp_dian;
+            } else {
+                ptfp_dian = parseFloat(ptfp_input);
+                ptfp_num =  danjia1 * ptfp_dian;
+            }
+
+            // alert("ptfp_num = " + ptfp_num);
+        }
+        if (zyfp.checked == true){
+            zyfp_num = danjia1 * 0.1;
+            // alert("zyfp_num = " + zyfp_num);
+        }
+        var danjia2 = parseFloat(Number(danjia1) + Number(ptfp_num) + Number(zyfp_num)).toFixed(2);
+        document.getElementById('danjia1').value = danjia2;
+    }
+    function show_price2() {
+        var number2 = parseInt(document.getElementById('number2').value);
+        var kuan2 = parseFloat(document.getElementById('kuan2').value);
+        var gao2 = parseFloat(document.getElementById('gao2').value);
+        var cemian2 = parseFloat(document.getElementById('cemian2').value);
+        var dibu2 = parseFloat(document.getElementById('dibu2').value);
+        var kezhong2 = parseFloat(document.getElementById('kezhong2').value);
+        var banfei2 = parseFloat(document.getElementById('pj_banfei2').value);
+        var zuogong2 = document.getElementById('zuogong2').value;
+        var kuanshi2 = parseInt(document.getElementById('kuanshi2').value);
+        var yinshua2 = document.getElementsByName('yinshua2');
+        var yinshua_color2 = document.getElementsByName('yinshua_color2');
+        var yinshua_kind = document.getElementsByName('yinshua_kind2');
+        var lirun2 = document.getElementById('lirun2').value;
+
+        var yinshua_num = 0;
+        var yinshua_color_num = 0;
+        var yinshua_kind_num = 0;
+        //获取印刷种类代号
+        for(var i= 0;i<yinshua_kind.length;i++){
+            if (yinshua_kind[i].checked==true){
+                yinshua_kind_num = yinshua_kind[i].value;
+                // alert(yinshua_kind_num);
+                break;
+            }else{
+                if(i==yinshua_kind.length-1){
+                    // alert('印刷种类未选择.');
+                    return false;
+                }
+            }
+        }
+        //获取印刷面数
+        for(var i= 0;i<yinshua2.length;i++){
+            if (yinshua2[i].checked==true){
+                // alert(yinshua_color[i].value+'  is selected.');
+                yinshua_num = yinshua2[i].value;
+                break;
+            }else{
+                if(i==yinshua2.length-1){
+
+                }
+            }
+        }
+        //获取印刷颜色代号
+        for(var i= 0;i<yinshua_color2.length;i++){
+            if (yinshua_color2[i].checked==true){
+                // alert(yinshua_color[i].value+'  is selected.');
+                yinshua_color_num = yinshua_color2[i].value;
+                break;
+            }else{
+                if(i==yinshua_color2.length-1){
+
+                }
+            }
+        }
+
+        var stjc_num = 0;   //手提加长
+        var stmr_num = 0.06;   //手提默认
+        var dzxh_num = 0.95;   //手提默认
+        // if (kuanshi2 == 2){
+        //     stmr_num = 0.06;
+        //     alert("stmr_num = " +stmr_num);
+        // }
+        var ddbz_num = 0; //单独包装
+        var niukou_num = 0; //纽扣
+        var yunfei_num = 0;//运费
+        var zhixiang_num = 0;//纸箱
+        var ptfp_num = 0;//普通发票
+        var ptfp_dian = 0.01; //默认点数
+        var zyfp_num = 0;//专用发票
+        var bljg_num = 12;//布料价格
+
+
+        var stjc = document.getElementById('stjc2');
+        var niukou = document.getElementById('niukou2');
+        var ddbz = document.getElementById('ddbz2');
+        var zhongliang = document.getElementById('zhongliang2');
+        var kddj = document.getElementById('kddj2');
+        var yunfei = document.getElementById('yunfei2');
+        var zhixiang = document.getElementById('zhixiang2');
+        var ptfp = document.getElementById('ptfp2');
+        var zyfp = document.getElementById('zyfp2');
+        var bljg = document.getElementById('bljg2');
+
+        var ddbz_input = parseFloat(document.getElementById('ddbz_input2').value);
+        var niukou_input = parseFloat(document.getElementById('niukou_input2').value);
+        var zhixiang_input = parseFloat(document.getElementById('zhixiang_input2').value);
+        var yunfei_input = parseFloat(document.getElementById('yunfei_input2').value);
+        // var zyfp_input = parseFloat(document.getElementById('zyfp_input2').value);
+        var bljg_input = parseFloat(document.getElementById('bljg_input2').value);
+
+        var zuogong_num;//做工
+        if (zuogong2 == undefined || zuogong2 == null || zuogong2 == ''){
+            zuogong_num = 0;
+        } else {
+            zuogong_num = parseFloat(zuogong2);
+        }
+        var lirun_num = 0;   //利润
+        if (lirun2 == undefined || lirun2 == null || lirun2 == ''){
+            lirun_num = 0;
+        } else {
+            lirun_num = parseFloat(lirun2);
+        }
+        if (stjc.checked == true){
+            var jiachang = document.getElementsByName('jiachang2');  //加长长度
+            for(var i= 0;i<jiachang.length;i++){
+                if (jiachang[i].checked==true){
+                    stjc_num = parseFloat(jiachang[i].value);
+                    // alert("stjc_num = " +stjc_num);
+                    break;
+                }else{
+                    if(i==jiachang.length-1){
+                        // alert('加长长度未选择.');
+                    }
+                }
+            }
+        }
+        if (ddbz.checked == true){
+            ddbz_num = ddbz_input;
+            // alert("ddbz = " + ddbz_num);
+        }
+        if (niukou.checked == true){
+            niukou_num = niukou_input;
+            // alert("niukou_num = " + niukou_num);
+        }
+        if (yunfei.checked == true){
+            yunfei_num = yunfei_input;
+            // alert("yunfei_num = " + yunfei_num);
+        }
+        if (zhixiang.checked == true){
+            zhixiang_num = zhixiang_input;
+            // alert("zhixiang_num = " + zhixiang_num);
+        }
+        if (bljg.checked == true){
+            bljg_num = bljg_input;
+            // alert("bljg_num = " + bljg_num);
+        }
+
+        //印刷价格
+        var yinshua_price = 0;
+        if (kuanshi2 == 5){
+            if (yinshua_color_num == 2){
+                if (number2 >= 10001 ) {
+                    yinshua_price = number2 * 0.13 ;
+                }else {
+                    yinshua_price = 1300;
+                }
+            }else {
+                if (number2 >= 7001) {
+                    yinshua_price = 600;
+                }else {
+                    yinshua_price = 560;
+                }
+            }
+        }else if(kuanshi2 == 4){
+            if (yinshua_color_num == 2){
+                if (number2 >= 10001 ) {
+                    yinshua_price = number2 * 0.13 ;
+                }else {
+                    yinshua_price = 1300;
+                }
+            }else {
+                if (number2 >= 7001) {
+                    yinshua_price = 600;
+                }else {
+                    yinshua_price = 560;
+                }
+            }
+        }else if(kuanshi2 == 3){
+            if (yinshua_kind_num == 3){
+                if (yinshua_num == "2"){
+                    if (yinshua_color_num == 2){
+                        if (number2 <= 500) {
+                            yinshua_price = 230;
+                        }else {
+                            yinshua_price = number2 * 0.4 + 30;
+                        }
+                    }else {
+                        if (number2 <= 500) {
+                            yinshua_price = 120;
+                        }else {
+                            yinshua_price = number2 * 0.2 + 20;
+                        }
+                    }
+                }else {
+                    if (yinshua_color_num == 2){
+                        if (number2 <= 500) {
+                            yinshua_price = 120;
+                        }else {
+                            yinshua_price = number2 * 0.2 + 20;
+                        }
+                    }else {
+                        if (number2 <= 500) {
+                            yinshua_price = 60;
+                        }else {
+                            yinshua_price = number2 * 0.1 + 10;
+                        }
+                    }
+
+                }
+            }else if (yinshua_kind_num == 5){
+                if (yinshua_num == "2"){
+                    if (yinshua_color_num == 2){
+                        if (number2 <= 500) {
+                            yinshua_price = 150;
+                        }else {
+                            yinshua_price = number2 * 0.2 + 50;
+                        }
+                    }else {
+                        if (number2 <= 500) {
+                            yinshua_price = 75;
+                        }else {
+                            yinshua_price = number2 * 0.1 + 25;
+                        }
+                    }
+                }else {
+                    if (yinshua_color_num == 2){
+                        if (number2 <= 500) {
+                            yinshua_price = 150;
+                        }else {
+                            yinshua_price = number2 * 0.2 + 50;
+                        }
+                    }else {
+                        if (number2 <= 500) {
+                            yinshua_price = 75;
+                        }else {
+                            yinshua_price = number2 * 0.1 + 25;
+                        }
+                    }
+
+                }
+            } else {
+                yinshua_price = 0;
+            }
+
+        }else if (kuanshi2 == 2){
+            yinshua_price = ((Number(gao2) + 4) * 2 + Number(cemian2)) /100 * (Number(kuan2) + Number(cemian2) + 5) /100 * 0.72;
+            if (yinshua_price <= 1200){
+                yinshua_price = 1200;
+            }
+        } else {
+            if (yinshua_color_num == 2){
+                if (number2 <= 10000 && number2 >= 5000) {
+                    yinshua_price = 1300;
+                }
+            }else {
+                if (number2 <= 7000 && number2 >= 5000) {
+                    yinshua_price = 500;
+                }else {
+                    yinshua_price = 700;
+                }
+            }
+        }
+        if (yinshua_price != 0){
+            yinshua_price = yinshua_price / Number(number2);
+        }
+        yunfei_num = yunfei_num /Number(number2);
+        var buliao = 0;
+        if(kuanshi2 == 5){
+            buliao = ((Number(gao2) + 5.5) * 2) /100 * Number(kuan2) /100 * Number(kezhong2) /1000 * Number(bljg_num);
+        }else if(kuanshi2 == 4){
+            buliao = ((Number(gao2) + 3.5) * 2 + Number(dibu2)) /100 * Number(kuan2) /100 * Number(kezhong2) /1000 * Number(bljg_num) + Number(stmr_num);
+        }else if(kuanshi2 == 2){
+            buliao = ((Number(gao2) + 3) * 2 + Number(cemian2)) /100 * (Number(kuan2) + Number(cemian2) + 5) /100 * Number(kezhong2) /1000 * Number(bljg_num) + Number(stmr_num);
+        }else {
+            buliao = ((Number(gao2) + 3) * 2 + Number(cemian2)) /100 * (Number(kuan2) + Number(cemian2) + 5) /100 * Number(kezhong2) /1000 * Number(bljg_num) + 0.05;
+        }
+
+        alert("yinshua_price = " + yinshua_price);
+        alert("buliao = " + buliao);
+        var danjia1;
+        if (kuanshi2 == 5){
+            danjia1 = parseFloat(Number(buliao) + Number(yinshua_price) + Number(zuogong_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num)+ Number(lirun_num)).toFixed(10);
+        }else if (kuanshi2 == 4){
+            danjia1 = parseFloat(Number(buliao) + Number(yinshua_price) + Number(stmr_num) + Number(zuogong_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(stjc_num) + Number(lirun_num)).toFixed(10);
+        }else if (kuanshi2 == 3){
+            danjia1 = parseFloat(Number(dzxh_num) + Number(yinshua_price) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(lirun_num)).toFixed(10);
+        }else if (kuanshi2 == 2){
+            alert("banfei2 = " + banfei2);
+            danjia1 = parseFloat(Number(buliao) + Number(banfei2) + Number(yinshua_price) + Number(zuogong_num) + Number(stmr_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(stjc_num) + Number(lirun_num)).toFixed(10);
+        }else {
+            danjia1 = parseFloat(Number(buliao) + Number(yinshua_price) + Number(zuogong_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(stjc_num) + Number(lirun_num)).toFixed(10);
+        }
+
+        // alert("danjia1 = " + danjia1);
+        if (ptfp.checked == true){
+            var ptfp_input = document.getElementById('ptfp_input2').value;
+            // alert("input = " + ptfp_input);
+            if (ptfp_input == undefined || ptfp_input == null || ptfp_input == ''){
+                // alert("kong = " + ptfp_dian);
+                ptfp_num =  danjia1 * ptfp_dian;
+            } else {
+                ptfp_dian = parseFloat(ptfp_input);
+                ptfp_num =  danjia1 * ptfp_dian;
+            }
+            // alert("ptfp_num = " + ptfp_num);
+        }
+        if (zyfp.checked == true){
+            zyfp_num = danjia1 * 0.1;
+            // alert("zyfp_num = " + zyfp_num);
+        }
+        var danjia2 = parseFloat(Number(danjia1) + Number(ptfp_num) + Number(zyfp_num)).toFixed(2);
+        document.getElementById('danjia2').value = danjia2;
+    }
+    function show_price3() {
+        // alert("123");
+        var yinshua3 = document.getElementsByName('yinshua3');
+        var yinshua_color3 = document.getElementsByName('yinshua_color3');
+        var chousheng3 = document.getElementsByName('chousheng3');
+        var number3 = parseFloat(document.getElementById('number3').value);
+        var kuan3 = parseFloat(document.getElementById('kuan3').value);
+        var gao3 = parseFloat(document.getElementById('gao3').value);
+        var cemian3 = parseFloat(document.getElementById('cemian3').value);
+        var kezhong3 = parseFloat(document.getElementById('kezhong3').value);
+        var dibu3 = parseFloat(document.getElementById('dibu3').value);
+        var kuanshi3 = parseInt(document.getElementById('kuanshi3').value);
+        var zuogong3 = parseFloat(document.getElementById('zuogong3').value);
+        var lirun3 = document.getElementById('lirun3').value;
+
+        var yinshua_num = 0;
+        var yinshua_color_num = 0;
+        var chousheng_num = 0;
+
+        //印刷1
+        for(var i= 0;i<yinshua3.length;i++){
+            if (yinshua3[i].checked==true){
+                yinshua_num = yinshua3[i].value;
+                break;
+            }else{
+                if(i==yinshua3.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+        //印刷2
+        for(var i= 0;i<yinshua_color3.length;i++){
+            if (yinshua_color3[i].checked==true){
+                yinshua_color_num = yinshua_color3[i].value;
+                break;
+            }else{
+                if(i==yinshua_color3.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+
+
+        var chousheng_num = 0;   //抽绳
+        var dacha_num = 0;   //打叉
+        var bbdzjg_num = 0;   //包边倒针加固
+        var stmr_num = 0.07;   //手提默认
+        var stjc_num = 0;   //手提加长
+        var ddbz_num = 0; //单独包装
+        var niukou_num = 0; //纽扣
+        var yunfei_num = 0;//运费
+        var zhixiang_num = 0;//纸箱
+        var ptfp_num = 0;//普通发票
+        var ptfp_dian = 0.01;//普通发票
+        var zyfp_num = 0;//专用发票
+        var bljg_num = 12;//布料价格
+
+        var sunhao_num = 0;//损耗
+        var qiegong_num = 0.02;//切工
+
+        var dacha = document.getElementById('dacha3');
+        var niukou =  document.getElementById('niukou3');
+        var zhongliang =  document.getElementById('zhongliang3');
+        var yunfei =  document.getElementById('yunfei3');
+        var zhixiang =  document.getElementById('zhixiang3');
+        var stjc =  document.getElementById('stjc3');
+
+        var ddbz =  document.getElementById('ddbz3');
+        var bbdzjg =  document.getElementById('bbdzjg3');
+        var ptfp = document.getElementById('ptfp3');
+        var zyfp = document.getElementById('zyfp3');
+        var bljg = document.getElementById('bljg3');
+
+        var dacha_input = parseFloat(document.getElementById('dacha_input3').value);
+        var bbdzjg_input = parseFloat(document.getElementById('bbdzjg_input3').value);
+        var ddbz_input = parseFloat(document.getElementById('ddbz_input3').value);
+        var niukou_input = parseFloat(document.getElementById('niukou_input3').value);
+        var yunfei_input = parseFloat(document.getElementById('yunfei_input3').value);
+        var zhixiang_input = parseFloat(document.getElementById('zhixiang_input3').value);
+        var zyfp_input = parseFloat(document.getElementById('zyfp_input3').value);
+        var bljg_input = parseFloat(document.getElementById('bljg_input3').value);
+
+        var lirun_num = 0;   //利润
+        if (lirun3 == undefined || lirun3 == null || lirun3 == ''){
+            lirun_num = 0;
+        } else {
+            lirun_num = parseFloat(lirun3);
+        }
+        if (stjc.checked == true){
+            var jiachang = document.getElementsByName('jiachang3');  //加长长度
+            for(var i= 0;i<jiachang.length;i++){
+                if (jiachang[i].checked==true){
+                    stjc_num = parseFloat(jiachang[i].value);
+                    // alert("stjc_num = " +stjc_num);
+                    break;
+                }else{
+                    if(i==jiachang.length-1){
+                        // alert('加长长度未选择.');
+                    }
+                }
+            }
+        }
+        if (dacha.checked == true){
+            dacha_num = dacha_input;
+            // alert("dacha_num = " + dacha_num);
+        }
+        if (bbdzjg.checked == true){
+            bbdzjg_num = bbdzjg_input;
+            // alert("bbdzjg_num = " + bbdzjg_num);
+        }
+        if (ddbz.checked == true){
+            ddbz_num = ddbz_input;
+            // alert("ddbz = " + ddbz_num);
+        }
+        if (niukou.checked == true){
+            niukou_num = niukou_input;
+            // alert("niukou_num = " + niukou_num);
+        }
+        if (yunfei.checked == true){
+            yunfei_num = yunfei_input;
+            // alert("yunfei_num = " + yunfei_num);
+        }
+        if (zhixiang.checked == true){
+            zhixiang_num = zhixiang_input;
+            // alert("zhixiang_num = " + zhixiang_num);
+        }
+        if (bljg.checked == true){
+            bljg_num = bljg_input;
+            // alert("bljg_num = " + bljg_num);
+        }
+
+        var yinshua_price = 0;
+        //印刷价格
+        if (yinshua_num == "2"){
+            if (yinshua_color_num == 3){
+                if (number3 <= 600) {
+                    yinshua_price = 240;
+                }else {
+                    yinshua_price = number3 * 0.16 + 90;
+                }
+            }else if (yinshua_color_num == 2){
+                if (number3 <= 600) {
+                    yinshua_price = 160;
+                }else {
+                    yinshua_price = number3 * 0.16 + 60;
+                }
+            }else {
+                if (number3 <= 500) {
+                    yinshua_price = 80;
+                }else {
+                    yinshua_price = number3 * 0.1 + 30;
+                }
+            }
+        }else {
+            if (yinshua_color_num == 3){
+                if (number3 <= 600) {
+                    yinshua_price = 200;
+                }else {
+                    yinshua_price = number3 * 0.16 + 50;
+                }
+            }else if (yinshua_color_num == 2){
+                if (number3 <= 600) {
+                    yinshua_price = 135;
+                }else {
+                    yinshua_price = number3 * 0.16 + 35;
+                }
+            }else {
+                if (number3 <= 600) {
+                    yinshua_price = 70;
+                }else{
+                    yinshua_price = number3 * 0.08 + 20;
+                }
+            }
+        }
+        yinshua_price = yinshua_price / Number(number3);
+        yunfei_num = yunfei_num / Number(number3);
+        // alert("ys_price = " + yinshua_price);
+
+        //损耗
+        if (number3 <= 500){
+            sunhao_num = 0.04;
+        }else if (number3 >= 501 && number3 <= 800){
+            sunhao_num = 0.02;
+        }else {
+            sunhao_num = 0.01;
+        }
+
+        if (kuanshi3 == 4){
+            for(var i= 0;i<chousheng3.length;i++){
+                if (chousheng3[i].checked==true){
+                    chousheng_num = chousheng3[i].value;
+                    break;
+                }else{
+                    if(i==chousheng3.length-1){
+                        // alert('材料未选择.');
+                    }
+                }
+            }
+            chousheng_num = (Number(kuan3) / 100 * 2 + 20) * 0.06 * chousheng_num;
+        }else if (kuanshi3 == 5){
+            chousheng_num = ((Number(gao3) + Number(kuan3)) / 100 * 2 + 20) * 2 * 0.06;
+        }
+        alert("chousheng_num = " + chousheng_num);
+        var buliao;
+        if (kuanshi3 == 5){
+            buliao = ((Number(gao3) + 3) * 2) / 100 * (Number(kuan3) + 2) /100 * Number(kezhong3) / 1000 * Number(bljg_num);
+        }else if (kuanshi3 == 4){
+            buliao = ((Number(gao3) + 3) * 2) / 100 * (Number(kuan3) + 2) /100 * Number(kezhong3) / 1000 * Number(bljg_num);
+        }else if (kuanshi3 == 3){
+            buliao = ((Number(gao3) + 3) * 2) / 100 * (Number(kuan3) + 2) /100 * Number(kezhong3) / 1000 * Number(bljg_num);
+        }else if (kuanshi3 == 2){
+            buliao = ((Number(gao3) + 3) * 2  + Number(dibu3)) / 100 * (Number(kuan3) + 2) /100 * Number(kezhong3) / 1000 * Number(bljg_num);
+
+        }else {
+            buliao = ((Number(gao3) + 3) * 2  + Number(cemian3)) / 100 * (Number(kuan3) + Number(cemian3) + 5) /100 * Number(kezhong3) / 1000 * Number(bljg_num);
+        }
+        // alert("buliao = " + buliao);
+
+        var danjia1 ;
+        // alert("danjia1 = " + danjia1);
+        if (kuanshi3 == 5){
+            danjia1 = parseFloat(Number(buliao) + Number(chousheng_num) + Number(yinshua_price) + Number(qiegong_num) + Number(sunhao_num) + Number(zuogong3) + Number(stjc_num) + Number(dacha_num) + Number(bbdzjg_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(lirun_num)).toFixed(10);
+        }else if (kuanshi3 == 4){
+            danjia1 = parseFloat(Number(buliao) + Number(chousheng_num) + Number(yinshua_price) + Number(qiegong_num) + Number(sunhao_num) + Number(zuogong3) + Number(stjc_num) + Number(dacha_num) + Number(bbdzjg_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(lirun_num)).toFixed(10);
+        }else if (kuanshi3 == 3){
+            danjia1 = parseFloat(Number(buliao) + Number(stmr_num) + Number(yinshua_price) + Number(qiegong_num) + Number(sunhao_num) + Number(zuogong3) + Number(stjc_num) + Number(dacha_num) + Number(bbdzjg_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(lirun_num)).toFixed(10);
+        }else if (kuanshi3 == 2){
+            danjia1 = parseFloat(Number(buliao) + Number(stmr_num) + Number(yinshua_price) + Number(qiegong_num) + Number(sunhao_num) + Number(zuogong3) + Number(stjc_num) + Number(dacha_num) + Number(bbdzjg_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(lirun_num)).toFixed(10);
+        }else {
+            danjia1 = parseFloat(Number(buliao) + Number(stmr_num) + Number(yinshua_price) + Number(qiegong_num) + Number(sunhao_num) + Number(zuogong3) + Number(stjc_num) + Number(dacha_num) + Number(bbdzjg_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(lirun_num)).toFixed(10);
+        }
+        if (ptfp.checked == true){
+            var ptfp_input = document.getElementById('ptfp_input3').value;
+            // alert("input = " + ptfp_input);
+            if (ptfp_input == undefined || ptfp_input == null || ptfp_input == ''){
+                // alert("kong = " + ptfp_dian);
+                ptfp_num =  danjia1 * ptfp_dian;
+            } else {
+                ptfp_dian = parseFloat(ptfp_input);
+                ptfp_num =  danjia1 * ptfp_dian;
+            }
+
+            // alert("ptfp_num = " + ptfp_num);
+        }
+        if (zyfp.checked == true){
+            zyfp_num = danjia1 * 0.1;
+            // alert("zyfp_num = " + zyfp_num);
+        }
+        var danjia2 = parseFloat(Number(danjia1) + Number(ptfp_num) + Number(zyfp_num)).toFixed(2);
+        document.getElementById('danjia3').value = danjia2;
+
+    }
+    function show_price4() {
+        // alert("123");
+        var yinshua4 = document.getElementsByName('yinshua4');
+        var yinshua_color4 = document.getElementsByName('yinshua_color4');
+        var number4 = parseFloat(document.getElementById('number4').value);
+        var kuan4 = parseFloat(document.getElementById('kuan4').value);
+        var gao4 = parseFloat(document.getElementById('gao4').value);
+        var cemian4 = parseFloat(document.getElementById('cemian4').value);
+        var kezhong4 = parseFloat(document.getElementById('kezhong4').value);
+        var zuogong4 = parseFloat(document.getElementById('zuogong4').value);
+        var lirun4 = document.getElementById('lirun4').value;
+
+        var yinshua_num = 0;
+        var yinshua_color_num = 0;
+
+        //印刷1
+        for(var i= 0;i<yinshua4.length;i++){
+            if (yinshua4[i].checked==true){
+                yinshua_num = yinshua4[i].value;
+                break;
+            }else{
+                if(i==yinshua4.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+        //印刷2
+        for(var i= 0;i<yinshua_color4.length;i++){
+            if (yinshua_color4[i].checked==true){
+                yinshua_color_num = yinshua_color4[i].value;
+                break;
+            }else{
+                if(i==yinshua_color4.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+
+
+        var dacha_num = 0;   //打叉
+        var bbdzjg_num = 0;   //包边倒针加固
+        var stjc_num = 0;   //手提加长
+        var stmr_num = 0.07;   //手提默认
+        var ddbz_num = 0; //单独包装
+        var niukou_num = 0; //纽扣
+        var yunfei_num = 0;//运费
+        var zhixiang_num = 0;//纸箱
+        var ptfp_num = 0;//普通发票
+        var ptfp_dian = 0.01;//普通发票
+        var zyfp_num = 0;//专用发票
+        var bljg_num = 12;//布料价格
+
+        var sunhao_num = 0;//损耗
+        var qiegong_num = 0.02;//切工
+
+        var dacha = document.getElementById('dacha4');
+        var niukou =  document.getElementById('niukou4');
+        var zhongliang =  document.getElementById('zhongliang4');
+        var yunfei =  document.getElementById('yunfei4');
+        var zhixiang =  document.getElementById('zhixiang4');
+        var stjc =  document.getElementById('stjc4');
+
+        var ddbz =  document.getElementById('ddbz4');
+        var bbdzjg =  document.getElementById('bbdzjg4');
+        var ptfp = document.getElementById('ptfp4');
+        var zyfp = document.getElementById('zyfp4');
+        var bljg = document.getElementById('bljg4');
+
+        var dacha_input = parseFloat(document.getElementById('dacha_input4').value);
+        var bbdzjg_input = parseFloat(document.getElementById('bbdzjg_input4').value);
+        var ddbz_input = parseFloat(document.getElementById('ddbz_input4').value);
+        var niukou_input = parseFloat(document.getElementById('niukou_input4').value);
+        var yunfei_input = parseFloat(document.getElementById('yunfei_input4').value);
+        var zhixiang_input = parseFloat(document.getElementById('zhixiang_input4').value);
+        var ptfp_input = parseFloat(document.getElementById('ptfp_input4').value);
+        var zyfp_input = parseFloat(document.getElementById('zyfp_input4').value);
+        var bljg_input = parseFloat(document.getElementById('bljg_input4').value);
+
+        var lirun_num = 0;   //利润
+        if (lirun4 == undefined || lirun4 == null || lirun4 == ''){
+            lirun_num = 0;
+        } else {
+            lirun_num = parseFloat(lirun4);
+        }
+        if (stjc.checked == true){
+            var jiachang = document.getElementsByName('jiachang4');  //加长长度
+            for(var i= 0;i<jiachang.length;i++){
+                if (jiachang[i].checked==true){
+                    stjc_num = parseFloat(jiachang[i].value);
+                    // alert("stjc_num = " +stjc_num);
+                    break;
+                }else{
+                    if(i==jiachang.length-1){
+                        // alert('加长长度未选择.');
+                    }
+                }
+            }
+        }
+        if (dacha.checked == true){
+            dacha_num = dacha_input;
+            // alert("dacha_num = " + dacha_num);
+        }
+        if (bbdzjg.checked == true){
+            bbdzjg_num = bbdzjg_input;
+            // alert("bbdzjg_num = " + bbdzjg_num);
+        }
+        if (ddbz.checked == true){
+            ddbz_num = ddbz_input;
+            // alert("ddbz = " + ddbz_num);
+        }
+        if (niukou.checked == true){
+            niukou_num = niukou_input;
+            // alert("niukou_num = " + niukou_num);
+        }
+        if (yunfei.checked == true){
+            yunfei_num = yunfei_input;
+            // alert("yunfei_num = " + yunfei_num);
+        }
+        if (zhixiang.checked == true){
+            zhixiang_num = zhixiang_input;
+            // alert("zhixiang_num = " + zhixiang_num);
+        }
+        if (bljg.checked == true){
+            bljg_num = bljg_input;
+            // alert("bljg_num = " + bljg_num);
+        }
+
+        //印刷价格
+
+        var yinshua_price = ((Number(gao4) + 3) * 2 + Number(cemian4)) / 100  *  (Number(kuan4)  + Number(cemian4)  + 2) / 100 * 0.72 ;
+        //版费
+        var banfei_price = (((Number(gao4) + 3) * 2) + Number(cemian4)) *  (Number(kuan4) + Number(cemian4)  + 7) * 0.09 * Number(yinshua_color_num);
+        var banfei_price_avg = banfei_price / Number(number4);
+        yunfei_num = yunfei_num / Number(number4);
+        // alert("ys_price = " + yinshua_price);
+        // alert("banfei_price_avg = " + banfei_price_avg);
+
+        //损耗
+        if (number4 <= 1000){
+            sunhao_num = 0.18;
+        }else if (number4 >= 1001 && number4 <= 3000){
+            sunhao_num = 0.06;
+        }else if (number4 >= 3001 && number4 <= 5000) {
+            sunhao_num = 0.02;
+        }else {
+            sunhao_num = 0.01;
+        }
+
+
+
+        var buliao =((Number(gao4) / 100 + 3) * 2 + Number(cemian4)) /100 * (Number(kuan4) / 100 + Number(cemian4) / 100 + 2) * Number(kezhong4) / 1000 * Number(bljg_num);
+        // alert("buliao = " + buliao);
+        //包边
+        var baobian_price = (Number(gao4) / 100  * 2 + Number(cemian4) / 100 ) * 2 * 0.07 * Number(buliao) + 0.01;
+
+        var danjia1 = parseFloat(Number(buliao) + Number(stmr_num) + Number(baobian_price) + Number(banfei_price_avg) + Number(yinshua_price) + Number(qiegong_num) + Number(sunhao_num) + Number(zuogong4) + Number(stjc_num) + Number(dacha_num) + Number(bbdzjg_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(lirun_num)).toFixed(10);
+        // alert("danjia1 = " + danjia1);
+
+        if (ptfp.checked == true){
+            var ptfp_input = document.getElementById('ptfp_input4').value;
+            // alert("input = " + ptfp_input);
+            if (ptfp_input == undefined || ptfp_input == null || ptfp_input == ''){
+                // alert("kong = " + ptfp_dian);
+                ptfp_num =  danjia1 * ptfp_dian;
+            } else {
+                ptfp_dian = parseFloat(ptfp_input);
+                ptfp_num =  danjia1 * ptfp_dian;
+            }
+
+            // alert("ptfp_num = " + ptfp_num);
+        }
+        if (zyfp.checked == true){
+            zyfp_num = danjia1 * 0.1;
+            // alert("zyfp_num = " + zyfp_num);
+        }
+        var danjia2 = parseFloat(Number(danjia1) + Number(ptfp_num) + Number(zyfp_num)).toFixed(2);
+        document.getElementById('danjia4').value = danjia2;
+
+    }
+    function show_price5() {
+        // alert("123");
+        var yinshua5 = document.getElementsByName('yinshua5');
+        var yinshua_color5 = document.getElementsByName('yinshua_color5');
+        var number5 = parseFloat(document.getElementById('number5').value);
+        var kuan5 = parseFloat(document.getElementById('kuan5').value);
+        var gao5 = parseFloat(document.getElementById('gao5').value);
+        var cemian5 = parseFloat(document.getElementById('cemian5').value);
+        var kezhong5 = parseFloat(document.getElementById('kezhong5').value);
+        var zuogong5 = parseFloat(document.getElementById('zuogong5').value);
+        var lirun5 = document.getElementById('lirun5'.value);
+
+        var yinshua_num = 0;
+        var yinshua_color_num = 0;
+
+        //印刷1
+        for(var i= 0;i<yinshua5.length;i++){
+            if (yinshua5[i].checked==true){
+                yinshua_num = yinshua5[i].value;
+                break;
+            }else{
+                if(i==yinshua5.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+        //印刷2
+        for(var i= 0;i<yinshua_color5.length;i++){
+            if (yinshua_color5[i].checked==true){
+                yinshua_color_num = yinshua_color5[i].value;
+                break;
+            }else{
+                if(i==yinshua_color5.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+
+
+        var xiaokoudai_num = 0.13;   //小口袋
+        var dacha_num = 0;   //打叉
+        var bbdzjg_num = 0;   //包边倒针加固
+        var stmr_num = 0.07;   //手提默认
+        var stjc_num = 0;   //手提加长
+        var ddbz_num = 0; //单独包装
+        var niukou_num = 0.05; //纽扣
+        var yunfei_num = 0;//运费
+        var zhixiang_num = 0;//纸箱
+        var ptfp_num = 0;//普通发票
+        var ptfp_dian = 0.01;//普通发票
+        var zyfp_num = 0;//专用发票
+        var bljg_num = 12;//布料价格
+
+        var sunhao_num = 0;//损耗
+        var qiegong_num = 0.02;//切工
+
+
+        var dacha = document.getElementById('dacha5');
+        var niukou =  document.getElementById('niukou5');
+        var zhongliang =  document.getElementById('zhongliang5');
+        var yunfei =  document.getElementById('yunfei5');
+        var zhixiang =  document.getElementById('zhixiang5');
+        var stjc =  document.getElementById('stjc5');
+
+        var ddbz =  document.getElementById('ddbz5');
+        var bbdzjg =  document.getElementById('bbdzjg5');
+        var ptfp = document.getElementById('ptfp5');
+        var zyfp = document.getElementById('zyfp5');
+        var bljg = document.getElementById('bljg5');
+
+        var dacha_input = parseFloat(document.getElementById('dacha_input5').value);
+        var bbdzjg_input = parseFloat(document.getElementById('bbdzjg_input5').value);
+        var ddbz_input = parseFloat(document.getElementById('ddbz_input5').value);
+        var niukou_input = parseFloat(document.getElementById('niukou_input5').value);
+        var yunfei_input = parseFloat(document.getElementById('yunfei_input5').value);
+        var zhixiang_input = parseFloat(document.getElementById('zhixiang_input5').value);
+        var zyfp_input = parseFloat(document.getElementById('zyfp_input5').value);
+        var bljg_input = parseFloat(document.getElementById('bljg_input5').value);
+
+        var lirun_num = 0;   //利润
+        if (lirun5 == undefined || lirun5 == null || lirun5 == ''){
+            lirun_num = 0;
+        } else {
+            lirun_num = parseFloat(lirun5);
+        }
+        if (stjc.checked == true){
+            var jiachang = document.getElementsByName('jiachang3');  //加长长度
+            for(var i= 0;i<jiachang.length;i++){
+                if (jiachang[i].checked==true){
+                    stjc_num = parseFloat(jiachang[i].value);
+                    // alert("stjc_num = " +stjc_num);
+                    break;
+                }else{
+                    if(i==jiachang.length-1){
+                        // alert('加长长度未选择.');
+                    }
+                }
+            }
+        }
+        if (dacha.checked == true){
+            dacha_num = dacha_input;
+            // alert("dacha_num = " + dacha_num);
+        }
+        if (bbdzjg.checked == true){
+            bbdzjg_num = bbdzjg_input;
+            // alert("bbdzjg_num = " + bbdzjg_num);
+        }
+        if (ddbz.checked == true){
+            ddbz_num = ddbz_input;
+            // alert("ddbz = " + ddbz_num);
+        }
+        if (niukou.checked == true){
+            niukou_num = niukou_input;
+            // alert("niukou_num = " + niukou_num);
+        }
+        if (yunfei.checked == true){
+            yunfei_num = yunfei_input;
+            // alert("yunfei_num = " + yunfei_num);
+        }
+        if (zhixiang.checked == true){
+            zhixiang_num = zhixiang_input;
+            // alert("zhixiang_num = " + zhixiang_num);
+        }
+        if (bljg.checked == true){
+            bljg_num = bljg_input;
+            // alert("bljg_num = " + bljg_num);
+        }
+        var yinshua_price = 0;
+        //印刷价格
+        if (yinshua_color_num == 3){
+            if (number5 <= 1000) {
+                yinshua_price = 100 * 3.1;
+            }else if (number5 >= 1001 && number5 <= 2000) {
+                yinshua_price = 130 * 3.1;
+            }else {
+                yinshua_price = number5 * 0.12 * 3.1;
+            }
+        }else if (yinshua_color_num == 2){
+            if (number5 <= 1000) {
+                yinshua_price = 180;
+            }else if (number5 >= 1001 && number5 <= 2000) {
+                yinshua_price = 170 * 2.1;
+            }else {
+                yinshua_price = number5 * 0.12 * 2.1;
+            }
+        }else {
+            if (number5 <= 1000) {
+                yinshua_price = 140;
+            }else if (number5 >= 1001 && number5 <= 2000) {
+                yinshua_price = 170;
+            }else {
+                yinshua_price = number5 * 0.12 + 40 / number5;
+            }
+        }
+
+        yinshua_price = yinshua_price / Number(number5);
+        // alert("ys_price = " + yinshua_price);
+
+        //损耗
+        if (number5 <= 500){
+            sunhao_num = 0.04;
+        }else if (number5 >= 501 && number5 <= 800){
+            sunhao_num = 0.02;
+        }else {
+            sunhao_num = 0.01;
+        }
+
+
+        yunfei_num = yunfei_num / Number(number5);
+        var buliao =((Number(gao5) + 3) * 2  /100 + Number(cemian5) /100) * (Number(kuan5) + Number(cemian5) + 5) /100 * Number(kezhong5) / 1000 * Number(bljg_num);
+        // alert("buliao = " + buliao);
+        var danjia1 = parseFloat(Number(buliao) + Number(stmr_num) + Number(yinshua_price) + Number(qiegong_num) + Number(sunhao_num) + Number(zuogong5) + Number(xiaokoudai_num) + Number(stjc_num) + Number(dacha_num) + Number(bbdzjg_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(lirun_num)).toFixed(10);
+        // alert("danjia1 = " + danjia1);
+
+        if (ptfp.checked == true){
+            var ptfp_input = document.getElementById('ptfp_input5').value;
+            // alert("input = " + ptfp_input);
+            if (ptfp_input == undefined || ptfp_input == null || ptfp_input == ''){
+                ptfp_num =  danjia1 * ptfp_dian;
+            } else {
+                ptfp_dian = parseFloat(ptfp_input);
+                ptfp_num =  danjia1 * ptfp_dian;
+            }
+            // alert("ptfp_num = " + ptfp_num);
+        }
+        if (zyfp.checked == true){
+            zyfp_num = danjia1 * 0.1;
+            // alert("zyfp_num = " + zyfp_num);
+        }
+        var danjia2 = parseFloat(Number(danjia1) + Number(ptfp_num) + Number(zyfp_num)).toFixed(2);
+        document.getElementById('danjia5').value = danjia2;
+
+    }
+    function show_price6() {
+        // alert("123");
+        var yinshua6 = document.getElementsByName('yinshua6');
+        var yinshua_color6 = document.getElementsByName('yinshua_color6');
+        var yinshua_kind = document.getElementsByName('yinshua_kind6');
+        var houdu6 = document.getElementsByName('houdu6');
+        var number6 = parseFloat(document.getElementById('number6').value);
+        var kuan6 = parseFloat(document.getElementById('kuan6').value);
+        var gao6 = parseFloat(document.getElementById('gao6').value);
+        var cemian6 = parseFloat(document.getElementById('cemian6').value);
+        var chang6 = parseFloat(document.getElementById('chang6').value);
+        var dibu6 = parseFloat(document.getElementById('dibu6').value);
+        var kezhong6 = parseFloat(document.getElementById('kezhong6').value);
+        var zuogong6 = parseFloat(document.getElementById('zuogong6').value);
+
+        var kuanshi6 = parseInt(document.getElementById('kuanshi6').value);
+        var lirun6 = document.getElementById('lirun6').value;
+
+        var yinshua_num = 0;
+        var yinshua_color_num = 0;
+        var yinshua_kind_num = 0;
+        var houdu_num = 0;
+        //获取印刷种类代号
+        for(var i= 0;i<yinshua_kind.length;i++){
+            if (yinshua_kind[i].checked==true){
+                yinshua_kind_num = yinshua_kind[i].value;
+                // alert(yinshua_kind_num);
+                break;
+            }else{
+                if(i==yinshua_kind.length-1){
+                    // alert('印刷种类未选择.');
+                    return false;
+                }
+            }
+        }
+        //印刷1
+        for(var i= 0;i<yinshua6.length;i++){
+            if (yinshua6[i].checked==true){
+                yinshua_num = yinshua6[i].value;
+                break;
+            }else{
+                if(i==yinshua6.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+        //印刷2
+        for(var i= 0;i<yinshua_color6.length;i++){
+            if (yinshua_color6[i].checked==true){
+                yinshua_color_num = yinshua_color6[i].value;
+                break;
+            }else{
+                if(i==yinshua_color6.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+        //印刷2
+        for(var i= 0;i<houdu6.length;i++){
+            if (houdu6[i].checked==true){
+                houdu_num = houdu6[i].value;
+                break;
+            }else{
+                if(i==houdu6.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+
+        var xkd_num = 0;   //小口袋
+        var xts_num = 0;   //小口袋
+        var dacha_num = 0;   //打叉
+        var lalian_num = 0;   //包边倒针加固
+        var stmr_num = 0;   //手提默认
+        var stjc_num = 0;   //手提加长
+        var ddbz_num = 0; //单独包装
+        var tiekou_num = 0; //铁扣
+        var yunfei_num = 0;//运费
+        var zhixiang_num = 0;//纸箱
+        var ptfp_num = 0;//普通发票
+        var ptfp_dian = 0.01;//普通发票
+        var zyfp_num = 0;//专用发票
+        var qita_num = 0;//其他
+        var bljg_num = 12;//布料价格
+
+        var sunhao_num = 0;//损耗
+        var qiegong_num = 0.2;//切工
+
+
+        var tiekou =  document.getElementById('tiekou6');
+        var xts =  document.getElementById('xts6');
+        var xkd = document.getElementById('xkd6');
+        var lalian =  document.getElementById('lalian6');
+        var dacha = document.getElementById('dacha6');
+
+        var yunfei =  document.getElementById('yunfei6');
+        var zhixiang =  document.getElementById('zhixiang6');
+
+        var ddbz =  document.getElementById('ddbz6');
+        var ptfp = document.getElementById('ptfp6');
+        var zyfp = document.getElementById('zyfp6');
+        var bljg = document.getElementById('bljg6');
+        var qita = document.getElementById('qita6');
+
+        var tiekou_input = parseFloat(document.getElementById('tiekou_input6').value);
+        var xts_input = parseFloat(document.getElementById('xts_input6').value);
+        var xkd_input = parseFloat(document.getElementById('xkd_input6').value);
+        var lalian_input = parseFloat(document.getElementById('lalian_input6').value);
+
+        var dacha_input = parseFloat(document.getElementById('dacha_input6').value);
+        var ddbz_input = parseFloat(document.getElementById('ddbz_input6').value);
+        var yunfei_input = parseFloat(document.getElementById('yunfei_input6').value);
+        var zhixiang_input = parseFloat(document.getElementById('zhixiang_input6').value);
+        var zyfp_input = parseFloat(document.getElementById('zyfp_input6').value);
+        var qita_input = parseFloat(document.getElementById('qita_input6').value);
+        var bljg_input = parseFloat(document.getElementById('bljg_input6').value);
+
+        var lirun_num = 0;   //利润
+        if (lirun6 == undefined || lirun6 == null || lirun6 == ''){
+            lirun_num = 0;
+        } else {
+            lirun_num = parseFloat(lirun6);
+        }
+        if (tiekou.checked == true){
+            tiekou_num = tiekou_input;
+            // alert("dacha_num = " + dacha_num);
+        }
+        if (xts.checked == true){
+            xts_num = xts_input;
+            // alert("dacha_num = " + dacha_num);
+        }
+        if (xkd.checked == true){
+            xkd_num = xkd_input;
+            // alert("dacha_num = " + dacha_num);
+        }
+        if (lalian.checked == true){
+            lalian_num = lalian_input;
+            // alert("bbdzjg_num = " + bbdzjg_num);
+        }
+        if (dacha.checked == true){
+            dacha_num = dacha_input;
+            // alert("dacha_num = " + dacha_num);
+        }
+
+        if (ddbz.checked == true){
+            ddbz_num = ddbz_input;
+            // alert("ddbz = " + ddbz_num);
+        }
+
+        if (yunfei.checked == true){
+            yunfei_num = yunfei_input;
+            // alert("yunfei_num = " + yunfei_num);
+        }
+        if (zhixiang.checked == true){
+            zhixiang_num = zhixiang_input;
+            // alert("zhixiang_num = " + zhixiang_num);
+        }
+        if (qita.checked == true){
+            qita_num = qita_input;
+            // alert("niukou_num = " + niukou_num);
+        }
+        if (bljg.checked == true){
+            bljg_num = bljg_input;
+            // alert("bljg_num = " + bljg_num);
+        }
+        var yinshua_price = 0;
+        //印刷价格
+        if (yinshua_kind_num == 1){//彩印
+            yinshua_price = ((Number(gao6) + 5) * 2  /100 + Number(cemian6) /100) * (Number(kuan6) + Number(cemian6) + 5) /100 * 3 * 1.01;
+        } else {//丝印
+            if (yinshua_num == 2){
+                if (yinshua_color_num == 2){
+                    if (number6 <= 400) {
+                        yinshua_price = 170;
+                    }else {
+                        yinshua_price = Number(number6) * 0.5 + 50;
+                    }
+                }else {
+                    if (number6 <= 400) {
+                        yinshua_price =85;
+                    }else {
+                        yinshua_price = Number(number6) * 0.25 + 30;
+                    }
+                }
+            } else {
+                if (yinshua_color_num == 2){
+                    if (number6 <= 400) {
+                        yinshua_price = 170;
+                    }else {
+                        yinshua_price = Number(number6) * 0.3 + 50;
+                    }
+                }else {
+                    if (number6 <= 400) {
+                        yinshua_price =85;
+                    }else {
+                        yinshua_price = Number(number6) * 0.15 + 30;
+                    }
+                }
+            }
+
+        }
+
+        yinshua_price = yinshua_price / Number(number6);
+        // alert("ys_price = " + yinshua_price);
+
+        // //损耗
+        // if (number5 <= 500){
+        //     sunhao_num = 0.04;
+        // }else if (number5 >= 501 && number5 <= 800){
+        //     sunhao_num = 0.02;
+        // }else {
+        //     sunhao_num = 0.01;
+        // }
+
+
+        yunfei_num = yunfei_num / Number(number6);
+        var buliao =((Number(gao6) + 5) * 2  /100 + Number(cemian6) /100) * (Number(kuan6) + Number(cemian6) + 5) /100 * Number(houdu_num) * Number(bljg_num) * 1.05;
+        alert("buliao = " + buliao);
+        alert("yunfei_num = " + yunfei_num);
+        stmr_num = Number(chang6) * 0.06 / 100 * 2 * bljg_num * 1.05;
+        alert("stmr_num = " + stmr_num);
+        var danjia1 = parseFloat(Number(buliao) + Number(yinshua_price) + Number(stmr_num) + Number(qiegong_num) + Number(sunhao_num) + Number(zuogong6) + Number(tiekou_num) + Number(xts_num) + Number(xkd_num) + Number(lalian_num) + Number(dacha_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(qita_num) + Number(lirun_num)).toFixed(10);
+        alert("danjia1 = " + danjia1);
+
+        if (ptfp.checked == true){
+            var ptfp_input = document.getElementById('ptfp_input6').value;
+            // alert("input = " + ptfp_input);
+            if (ptfp_input == undefined || ptfp_input == null || ptfp_input == ''){
+                ptfp_num =  danjia1 * ptfp_dian;
+            } else {
+                ptfp_dian = parseFloat(ptfp_input);
+                ptfp_num =  danjia1 * ptfp_dian;
+            }
+            // alert("ptfp_num = " + ptfp_num);
+        }
+        if (zyfp.checked == true){
+            zyfp_num = danjia1 * 0.1;
+            // alert("zyfp_num = " + zyfp_num);
+        }
+        var danjia2 = parseFloat(Number(danjia1) + Number(ptfp_num) + Number(zyfp_num)).toFixed(2);
+        document.getElementById('danjia6').value = danjia2;
+
+    }
+    function show_price7() {
+        // alert("123");
+        var yinshua7 = document.getElementsByName('yinshua7');
+        var yinshua_color7 = document.getElementsByName('yinshua_color7');
+        var number7 = parseFloat(document.getElementById('number7').value);
+        var kuan7 = parseFloat(document.getElementById('kuan7').value);
+        var gao7 = parseFloat(document.getElementById('gao7').value);
+        var cemian7 = parseFloat(document.getElementById('cemian7').value);
+        var kezhong7 = parseFloat(document.getElementById('kezhong7').value);
+        var kuanshi7 = parseInt(document.getElementById('kuanshi7').value);
+        var zuogong7 = parseFloat(document.getElementById('zuogong7').value);
+        var zuogong7_2 = parseFloat(document.getElementById('zuogong7_2').value);
+        var lirun7 = document.getElementById('lirun7').value;
+        var dbhd7 = document.getElementById('dbhd7').value;
+
+        var yinshua_num = 0;
+        var yinshua_color_num = 0;
+
+        //印刷1
+        for(var i= 0;i<yinshua7.length;i++){
+            if (yinshua7[i].checked==true){
+                yinshua_num = yinshua7[i].value;
+                break;
+            }else{
+                if(i==yinshua7.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+        //印刷2
+        for(var i= 0;i<yinshua_color7.length;i++){
+            if (yinshua_color7[i].checked==true){
+                yinshua_color_num = yinshua_color7[i].value;
+                break;
+            }else{
+                if(i==yinshua_color7.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+
+        var stmr_num = 0;   //手提默认
+        var dbhd_num;   //底板厚度
+        var dacha_num = 0;   //打叉
+        var bbdzjg_num = 0;   //包边倒针加固
+
+        var xed_num = 0.05;   //小耳朵
+        var sldb_num;   //塑料底板
+
+        var niukou_num = 0; //纽扣
+        var yunfei_num = 0;//运费
+        var ddbz_num = 0; //单独包装
+        var zhixiang_num = 0;//纸箱
+        var ptfp_num = 0;//普通发票
+        var ptfp_dian = 0.01;//普通发票
+        var zyfp_num = 0;//专用发票
+        var bljg_num = 12;//布料价格
+
+        var sunhao_num = 0;//损耗
+        var zuogong_num = 0;//做工
+        var qiegong_num = 0.03;//切工
+
+        var dacha = document.getElementById('dacha7');
+        var bbdzjg =  document.getElementById('bbdzjg3');
+        var xed =  document.getElementById('xed7');
+        var sldb =  document.getElementById('sldb7');
+        var niukou =  document.getElementById('niukou7');
+        var yunfei =  document.getElementById('yunfei7');
+        var ddbz =  document.getElementById('ddbz3');
+        var zhixiang =  document.getElementById('zhixiang7');
+
+        var ptfp = document.getElementById('ptfp3');
+        var zyfp = document.getElementById('zyfp3');
+        var bljg = document.getElementById('bljg3');
+
+        var dacha_input = parseFloat(document.getElementById('dacha_input7').value);
+        var bbdzjg_input = parseFloat(document.getElementById('bbdzjg_input7').value);
+        var xed_input = parseFloat(document.getElementById('xed_input7').value);
+        var sldb_input = parseFloat(document.getElementById('sldb_input7').value);
+        var niukou_input = parseFloat(document.getElementById('niukou_input7').value);
+        var yunfei_input = parseFloat(document.getElementById('yunfei_input7').value);
+        var ddbz_input = parseFloat(document.getElementById('ddbz_input7').value);
+        var zhixiang_input = parseFloat(document.getElementById('zhixiang_input7').value);
+        var zyfp_input = parseFloat(document.getElementById('zyfp_input7').value);
+        var bljg_input = parseFloat(document.getElementById('bljg_input7').value);
+
+        var lirun_num;   //利润
+        if (lirun7 == undefined || lirun7 == null || lirun7 == ''){
+            lirun_num = 0;
+        } else {
+            lirun_num = parseFloat(lirun7);
+        }
+        if (dbhd7 == undefined || dbhd7 == null || dbhd7 == ''){
+            dbhd_num = 60;
+        } else {
+            dbhd_num = parseFloat(dbhd7);
+        }
+
+        if (dacha.checked == true){
+            dacha_num = dacha_input;
+            // alert("dacha_num = " + dacha_num);
+        }
+        if (bbdzjg.checked == true){
+            bbdzjg_num = bbdzjg_input;
+            // alert("bbdzjg_num = " + bbdzjg_num);
+        }
+        if (xed.checked == true){
+            xed_num = xed_input;
+            // alert("bbdzjg_num = " + bbdzjg_num);
+        }
+        if (sldb.checked == true){
+            sldb_num = sldb_input;
+            // alert("bbdzjg_num = " + bbdzjg_num);
+        }
+
+        if (niukou.checked == true){
+            niukou_num = niukou_input;
+            // alert("niukou_num = " + niukou_num);
+        }
+        if (yunfei.checked == true){
+            yunfei_num = yunfei_input;
+            // alert("yunfei_num = " + yunfei_num);
+        }
+        if (ddbz.checked == true){
+            ddbz_num = ddbz_input;
+            // alert("ddbz = " + ddbz_num);
+        }
+        if (zhixiang.checked == true){
+            zhixiang_num = zhixiang_input;
+            // alert("zhixiang_num = " + zhixiang_num);
+        }
+        if (bljg.checked == true){
+            bljg_num = bljg_input;
+            // alert("bljg_num = " + bljg_num);
+        }
+
+        var yinshua_price = 0;
+        //印刷价格
+        if (kuanshi7 == 1){//到底
+            if (yinshua_num == "2"){
+                if (yinshua_color_num == 3){
+                    if (number7 <= 400) {
+                        yinshua_price = 240;
+                    }else {
+                        yinshua_price = number7 * 0.48 + 90;
+                    }
+                }else if (yinshua_color_num == 2){
+                    if (number7 <= 400) {
+                        yinshua_price = 160;
+                    }else {
+                        yinshua_price = number7 * 0.3 + 60;
+                    }
+                }else {
+                    if (number7 <= 400) {
+                        yinshua_price = 80;
+                    }else {
+                        yinshua_price = number7 * 0.15 + 30;
+                    }
+                }
+            }else {
+                if (yinshua_color_num == 3){
+                    if (number7 <= 600) {
+                        yinshua_price = 200;
+                    }else {
+                        yinshua_price = number7 * 0.16 + 50;
+                    }
+                }else if (yinshua_color_num == 2){
+                    if (number7 <= 600) {
+                        yinshua_price = 135;
+                    }else {
+                        yinshua_price = number7 * 0.16 + 35;
+                    }
+                }else {
+                    if (number7 <= 600) {
+                        yinshua_price = 70;
+                    }else{
+                        yinshua_price = number7 * 0.08 + 20;
+                    }
+                }
+            }
+        }else {
+            if (yinshua_num == "2"){
+                if (yinshua_color_num == 3){
+                    if (number7 <= 600) {
+                        yinshua_price = 240;
+                    }else {
+                        yinshua_price = number7 * 0.16 + 90;
+                    }
+                }else if (yinshua_color_num == 2){
+                    if (number7 <= 600) {
+                        yinshua_price = 160;
+                    }else {
+                        yinshua_price = number7 * 0.16 + 60;
+                    }
+                }else {
+                    if (number7 <= 500) {
+                        yinshua_price = 80;
+                    }else {
+                        yinshua_price = number7 * 0.1 + 30;
+                    }
+                }
+            }else {
+                if (yinshua_color_num == 3){
+                    if (number7 <= 600) {
+                        yinshua_price = 200;
+                    }else {
+                        yinshua_price = number7 * 0.16 + 50;
+                    }
+                }else if (yinshua_color_num == 2){
+                    if (number7 <= 600) {
+                        yinshua_price = 135;
+                    }else {
+                        yinshua_price = number7 * 0.16 + 35;
+                    }
+                }else {
+                    if (number7 <= 600) {
+                        yinshua_price = 70;
+                    }else{
+                        yinshua_price = number7 * 0.08 + 20;
+                    }
+                }
+            }
+        }
+
+        yinshua_price = yinshua_price / Number(number7);
+        yunfei_num = yunfei_num / Number(number7);
+        // alert("ys_price = " + yinshua_price);
+
+        //损耗
+        if (number7 <= 500){
+            sunhao_num = 0.05;
+        }else if (number7 >= 501 && number7 <= 1000){
+            sunhao_num = 0.03;
+        }else {
+            sunhao_num = 0.01;
+        }
+
+
+        var buliao = ((Number(gao7) + 3) * 2  + Number(cemian7)) / 100 * (Number(kuan7) + Number(cemian7) + 5) /100 * Number(kezhong7) / 1000 * Number(bljg_num);
+
+        // alert("buliao = " + buliao);
+        if (kuanshi7 == 2){
+            stmr_num = (Number(gao7) * 4 / 100 + 125 + Number(cemian7) / 100 * 2) * 0.07 * 0.07 * Number(bljg_num);
+            zuogong_num = zuogong7_2;
+        } else {
+            stmr_num = (Number(gao7) * 4 / 100 + 125) * 0.07 * 0.07 * Number(bljg_num);
+            zuogong_num = zuogong7;
+        }
+        sldb_num = Number(kuan7) / 100 * Number(cemian7) / 100 * Number(dbhd_num);
+        alert("stmr_num = " + stmr_num);
+        var danjia1 = parseFloat(Number(buliao) + Number(stmr_num) + Number(yinshua_price) + Number(qiegong_num) + Number(sunhao_num) + Number(zuogong_num) + Number(dacha_num) + Number(bbdzjg_num) + Number(xed_num) + Number(sldb_num) + Number(niukou_num) + Number(yunfei_num) + Number(ddbz_num) + Number(zhixiang_num) + Number(lirun_num)).toFixed(10);
+        if (ptfp.checked == true){
+            var ptfp_input = document.getElementById('ptfp_input7').value;
+            // alert("input = " + ptfp_input);
+            if (ptfp_input == undefined || ptfp_input == null || ptfp_input == ''){
+                // alert("kong = " + ptfp_dian);
+                ptfp_num =  danjia1 * ptfp_dian;
+            } else {
+                ptfp_dian = parseFloat(ptfp_input);
+                ptfp_num =  danjia1 * ptfp_dian;
+            }
+
+            // alert("ptfp_num = " + ptfp_num);
+        }
+        if (zyfp.checked == true){
+            zyfp_num = danjia1 * 0.1;
+            // alert("zyfp_num = " + zyfp_num);
+        }
+        var danjia2 = parseFloat(Number(danjia1) + Number(ptfp_num) + Number(zyfp_num)).toFixed(2);
+        document.getElementById('danjia7').value = danjia2;
+
+    }
+    function get_weight1() {
+        var dzxh = document.getElementsByName('material');  //袋子型号
+        var number1 = parseInt(document.getElementById('number1').value);
+        var kuanshi1 = parseInt(document.getElementById('kuanshi1').value);
+        // var dzxh_num = 0;
+        var dzxh_kind = 0;
+        var dzxh_weight = 0;
+        //获取袋子型号
+        for(var i= 0;i<dzxh.length;i++){
+            if (dzxh[i].checked==true){
+                // alert(yinshua[i].value+'  is selected.');
+                dzxh_kind = dzxh[i].value;
+                break;
+            }else{
+                if(i==dzxh.length-1){
+                    // alert('袋子型号未选择.');
+                    return false;
+                }
+            }
+        }
+        // dzxh_kind = dzxh_kind * kuanshi1;
+        // alert("dzxh_kind ="  + dzxh_kind);
+        if (kuanshi1 == 4){
+            if (dzxh_kind == 1){
+                dzxh_weight = 0.03;
+            }else if (dzxh_kind == 2){
+                dzxh_weight = 0.041;
+            }else {
+                dzxh_weight = 0.048;
+            }
+        }else if (kuanshi1 == 3){
+            if (dzxh_kind == 1){
+                dzxh_weight = 0.012;
+            }else if (dzxh_kind == 2){
+                dzxh_weight = 0.016;
+            }else if (dzxh_kind == 3){
+                dzxh_weight = 0.023;
+            }else if (dzxh_kind == 4){
+                dzxh_weight = 0.026;
+            }else {
+                dzxh_weight = 0.034;
+            }
+        }else if (kuanshi1 == 2){
+            if (dzxh_kind == 1){
+                dzxh_weight = 0.02;
+            }else if (dzxh_kind == 2){
+                dzxh_weight = 0.029;
+            }else if (dzxh_kind == 3) {
+                dzxh_weight = 0.033;
+            }
+        }else {
+            if (dzxh_kind == 1){
+                dzxh_weight = 0.032;
+            }else if (dzxh_kind == 2){
+                dzxh_weight = 0.038;
+            }else {
+                dzxh_weight = 0.045;
+            }
+        }
+        dzxh_weight = number1 * dzxh_weight;
+        // alert(dzxh_weight);
+        // document.getElementById('danjia1').value = dzxh_weight;
+        document.getElementById('zhongliang_input1').value = parseFloat(dzxh_weight).toFixed(2);
+    }
+    function get_yunfei1() {
+        var zl = parseFloat(document.getElementById('zhongliang_input1').value);
+        var kddj = parseFloat(document.getElementById('kddj_input1').value);
+        var yunfei = Number(zl) * Number(kddj);
+        document.getElementById('yunfei_input1').value = parseFloat(yunfei).toFixed(2);
+    }
+    function get_weight2() {
+        var number2 = parseInt(document.getElementById('number2').value);
+        var kuan2 = parseFloat(document.getElementById('kuan2').value);
+        var gao2 = parseFloat(document.getElementById('gao2').value);
+        var cemian2 = parseFloat(document.getElementById('cemian2').value);
+        var dibu2 = parseFloat(document.getElementById('dibu2').value);
+        var kezhong2 = parseFloat(document.getElementById('kezhong2').value);
+        var kuanshi = parseInt(document.getElementById('kuanshi2').value);
+        var dzxh_weight;
+        if(kuanshi == 1){
+            dzxh_weight = ((gao2 + 3) * 2 + cemian2) / 100 * (kuan2 + cemian2 + 2) / 100 * kezhong2 / 1000 + 0.0082;
+        }else if (kuanshi == 2){
+            dzxh_weight = ((gao2 + 4) * 2 + cemian2) / 100 * (kuan2 + cemian2 + 2) / 100 * kezhong2 / 1000 * 1.2;
+        }else if (kuanshi == 3){
+            dzxh_weight = 0.04;
+        }else if (kuanshi == 4){
+            dzxh_weight = ((gao2 + 3.5) * 2 + dibu2) / 100 * kuan2 / 100 * kezhong2 / 1000 + 0.0082;
+        }else{
+            dzxh_weight = ((gao2 + 5.5) * 2 ) / 100 * kuan2 / 100 * kezhong2 / 1000 + 0.004;
+        }
+        dzxh_weight = Number(dzxh_weight) * Number(number2);
+        document.getElementById('zhongliang_input2').value = parseFloat(dzxh_weight).toFixed(2);
+    }
+    function get_yunfei2() {
+        var zl = parseFloat(document.getElementById('zhongliang_input2').value);
+        var kddj = parseFloat(document.getElementById('kddj_input2').value);
+        var yunfei = Number(zl) * Number(kddj);
+        document.getElementById('yunfei_input2').value = parseFloat(yunfei).toFixed(2);
+    }
+    function get_weight3() {
+        var number3 = parseInt(document.getElementById('number3').value);
+        var kuan3 = parseFloat(document.getElementById('kuan3').value);
+        var gao3 = parseInt(document.getElementById('gao3').value);
+        var cemian3 = parseInt(document.getElementById('cemian3').value);
+        var kezhong3 = parseInt(document.getElementById('kezhong3').value);
+        var dibu3 = parseInt(document.getElementById('dibu3').value);
+        var kuanshi = parseInt(document.getElementById('kuanshi3').value);
+        var dzxh_weight;
+        if (kuanshi == 5) {
+            dzxh_weight = ((gao3 + 3) * 2) / 100 * (kuan3 + 2) / 100 * kezhong3 / 1000 * 1.05 + 0.012;
+        }else if (kuanshi == 4) {
+            dzxh_weight = ((gao3 + 3) * 2) / 100 * (kuan3 + 2) / 100 * kezhong3 / 1000 * 1.05;
+        }else if (kuanshi == 3) {
+            dzxh_weight = ((gao3 + 3) * 2 + dibu3) / 100 * (kuan3 + 2) / 100 * kezhong3 / 1000 * 1.05;
+        }else if (kuanshi == 2) {
+            dzxh_weight = ((gao3 + 3) * 2 + dibu3) / 100 * (kuan3 + 2) / 100 * kezhong3 / 1000 * 1.05;
+        }else{
+            dzxh_weight = ((gao3 + 3) * 2 + cemian3) / 100 * (kuan3 + cemian3 + 2) / 100 * kezhong3 / 1000+ 0.0082;
+        }
+        dzxh_weight = Number(dzxh_weight) * Number(number3);
+        document.getElementById('zhongliang_input3').value = parseFloat(dzxh_weight).toFixed(2);
+    }
+    function get_yunfei3() {
+        var zl = parseFloat(document.getElementById('zhongliang_input3').value);
+        var kddj = parseFloat(document.getElementById('kddj_input3').value);
+        var yunfei = Number(zl) * Number(kddj);
+        document.getElementById('yunfei_input3').value = parseFloat(yunfei).toFixed(2);
+    }
+    function get_weight4() {
+        var number4 = parseInt(document.getElementById('number4').value);
+        var kuan4 = parseFloat(document.getElementById('kuan4').value);
+        var gao4 = parseInt(document.getElementById('gao4').value);
+        var cemian4 = parseInt(document.getElementById('cemian4').value);
+        var kezhong4 = parseInt(document.getElementById('kezhong4').value);
+        var dzxh_weight = (((gao4 + 3) * 2 + cemian4) / 100 * (kuan4 + cemian4 + 5) / 100 * kezhong4 / 1000) * 1.23;
+        dzxh_weight = Number(dzxh_weight) * Number(number4);
+        document.getElementById('zhongliang_input4').value = parseFloat(dzxh_weight).toFixed(2);
+    }
+    function get_yunfei4() {
+        var zl = parseFloat(document.getElementById('zhongliang_input4').value);
+        var kddj = parseFloat(document.getElementById('kddj_input4').value);
+        var yunfei = Number(zl) * Number(kddj);
+        document.getElementById('yunfei_input4').value = parseFloat(yunfei).toFixed(2);
+    }
+    function get_weight5() {
+        var number5 = parseInt(document.getElementById('number5').value);
+        var kuan5 = parseFloat(document.getElementById('kuan5').value);
+        var gao5 = parseInt(document.getElementById('gao5').value);
+        var cemian5 = parseInt(document.getElementById('cemian5').value);
+        var kezhong5 = parseInt(document.getElementById('kezhong5').value);
+        var dzxh_weight = ((gao5 + 3) * 2 + cemian5) / 100 * (kuan5 + cemian5 + 2) / 100 * kezhong5 / 1000+ 0.013;
+        dzxh_weight = Number(dzxh_weight) * Number(number5);
+        document.getElementById('zhongliang_input5').value = parseFloat(dzxh_weight).toFixed(2);
+    }
+    function get_yunfei5() {
+        var zl = parseFloat(document.getElementById('zhongliang_input5').value);
+        var kddj = parseFloat(document.getElementById('kddj_input5').value);
+        var yunfei = Number(zl) * Number(kddj);
+        document.getElementById('yunfei_input5').value = parseFloat(yunfei).toFixed(2);
+    }
+    function get_weight6() {
+        var number = parseInt(document.getElementById('number6').value);
+        var kuan = parseFloat(document.getElementById('kuan6').value);
+        var gao = parseInt(document.getElementById('gao6').value);
+        var houdu = document.getElementsByName('houdu6');
+        var houdu_num = 0;
+        for(var i= 0;i<houdu.length;i++){
+            if (houdu[i].checked==true){
+                houdu_num = houdu[i].value;
+                // alert('houdu_num = ' + houdu_num);
+                break;
+            }else{
+                if(i==houdu.length-1){
+                    // alert('袋子型号未选择.');
+                    return false;
+                }
+            }
+        }
+
+        var dzxh_weight = ((gao + 5) * 2 ) / 100 * (kuan + 3) / 100 * houdu_num / 2;
+        dzxh_weight = Number(dzxh_weight) * Number(number);
+        document.getElementById('zhongliang_input6').value = parseFloat(dzxh_weight).toFixed(2);
+    }
+    function get_yunfei6() {
+        var zl = parseFloat(document.getElementById('zhongliang_input6').value);
+        var kddj = parseFloat(document.getElementById('kddj_input6').value);
+        var yunfei = Number(zl) * Number(kddj);
+        document.getElementById('yunfei_input6').value = parseFloat(yunfei).toFixed(2);
+    }
+    function get_weight7() {
+        var number = parseInt(document.getElementById('number7').value);
+        var kuan = parseFloat(document.getElementById('kuan7').value);
+        var gao = parseInt(document.getElementById('gao7').value);
+        var cemian = parseInt(document.getElementById('cemian7').value);
+        var kezhong = parseInt(document.getElementById('kezhong7').value);
+
+
+        var dzxh_weight = ((Number(gao) + 3) * 2 / 100 + Number(cemian) / 100) * (Number(kuan) / 100 + Number(cemian) / 100 + 5) *  Number(kezhong) / 1000 + 0.01;
+        dzxh_weight = Number(dzxh_weight) * Number(number);
+        document.getElementById('zhongliang_input7').value = parseFloat(dzxh_weight).toFixed(2);
+    }
+    function get_yunfei7() {
+        var zl = parseFloat(document.getElementById('zhongliang_input7').value);
+        var kddj = parseFloat(document.getElementById('kddj_input7').value);
+        var yunfei = Number(zl) * Number(kddj);
+        document.getElementById('yunfei_input7').value = parseFloat(yunfei).toFixed(2);
+    }
+    function get_banfei2() {
+        // alert("getbanfi");
+        var number = parseFloat(document.getElementById('number2').value);
+        var kuan = parseFloat(document.getElementById('kuan2').value);
+        var gao = parseFloat(document.getElementById('gao2').value);
+        var cemian = parseFloat(document.getElementById('cemian2').value);
+        var yinshua_color = document.getElementsByName('yinshua_color2');
+
+        var yinshua_color_num = 0;
+        //印刷2
+        for(var i= 0;i<yinshua_color.length;i++){
+            if (yinshua_color[i].checked==true){
+                yinshua_color_num = yinshua_color[i].value;
+                break;
+            }else{
+                if(i==yinshua_color.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+
+        var banfei_price = parseFloat((((Number(gao) + 4) * 2) + Number(cemian) + 5) *  (Number(kuan) + Number(cemian)  + 2) * 0.09 * Number(yinshua_color_num)).toFixed(2);
+        var banfei_price_avg = parseFloat(banfei_price / Number(number)).toFixed(2);
+        document.getElementById('banfei2').value = banfei_price;
+        document.getElementById('pj_banfei2').value = banfei_price_avg;
+
+    }
+    function get_banfei4() {
+        // alert("getbanfi");
+        var number = parseFloat(document.getElementById('number4').value);
+        var kuan = parseFloat(document.getElementById('kuan4').value);
+        var gao = parseFloat(document.getElementById('gao4').value);
+        var cemian = parseFloat(document.getElementById('cemian4').value);
+        var yinshua_color = document.getElementsByName('yinshua_color4');
+
+        var yinshua_color_num = 0;
+        //印刷2
+        for(var i= 0;i<yinshua_color.length;i++){
+            if (yinshua_color[i].checked==true){
+                yinshua_color_num = yinshua_color[i].value;
+                break;
+            }else{
+                if(i==yinshua_color.length-1){
+                    // alert('材料未选择.');
+                }
+            }
+        }
+
+        var banfei_price = parseFloat((((Number(gao) + 3) * 2) + Number(cemian)) *  (Number(kuan) + Number(cemian)  + 7) * 0.09 * Number(yinshua_color_num)).toFixed(2);
+        var banfei_price_avg = parseFloat(banfei_price / Number(number)).toFixed(2);
+        document.getElementById('banfei4').value = banfei_price;
+        document.getElementById('pj_banfei4').value = banfei_price_avg;
+
+    }
+    function clear_data() {
+        window.location.reload();
+    }
+    function choose_ys_kind1(ths) {
+        var kind_num = parseInt(ths.value);
+        var ys = document.getElementsByName('yinshua1');
+        var ys_color = document.getElementsByName('yinshua_color1');
+        if (kind_num === 1) {
+            ys[0].disabled = "";
+            ys[1].disabled = "";
+            ys_color[0].disabled = "";
+            ys_color[1].disabled = "";
+            ys_color[2].disabled = "";
+
+            ys[1].checked = "checked"; //不选择为ys[0].checked == ""
+            ys_color[0].checked = "checked"; //不选择为ys[0].checked == ""
+            ys_color[3].disabled = "disabled";
+            ys_color[4].disabled = "disabled";
+        }else {
+            ys[0].checked = "";
+            ys[1].checked = "";
+            ys[0].disabled = "disabled";
+            ys[1].disabled = "disabled";
+            ys_color[0].disabled = "disabled";
+            ys_color[1].disabled = "disabled";
+            ys_color[2].disabled = "disabled";
+            ys_color[3].disabled = "";
+            ys_color[4].disabled = "";
+            ys_color[3].checked = "checked";
+        }
+    }
+    function choose_ys_kind2(ths) {
+        var kind_num = parseInt(ths.value);
+        var ys = document.getElementsByName('yinshua2');
+        var ys_color = document.getElementsByName('yinshua_color2');
+
+        if (kind_num === 3) {
+            ys[0].disabled = "";
+            ys[1].disabled = "";
+            ys_color[6].disabled = "";
+            ys_color[7].disabled = "";
+
+            ys[2].disabled = "disabled";
+            ys[3].disabled = "disabled";
+            ys_color[8].disabled = "disabled";
+            ys_color[9].disabled = "disabled";
+
+            ys[1].checked = "checked"; //不选择为ys[0].checked == ""
+            ys_color[6].checked = "checked"; //不选择为ys[0].checked == ""
+        }else if (kind_num === 5) {
+            ys[0].checked = "";
+            ys[1].checked = "";
+            ys[0].disabled = "disabled";
+            ys[1].disabled = "disabled";
+
+            ys[2].disabled = "";
+            ys[3].disabled = "";
+            ys_color[6].disabled = "disabled";
+            ys_color[7].disabled = "disabled";
+
+            ys_color[8].disabled = "";
+            ys_color[9].disabled = "";
+
+            ys[3].checked = "checked";
+            ys_color[8].checked = "checked";
+        }else {
+            ys[0].checked = "";
+            ys[1].checked = "";
+            ys[2].checked = "";
+            ys[3].checked = "";
+
+            ys[0].disabled = "disabled";
+            ys[1].disabled = "disabled";
+            ys[2].disabled = "disabled";
+            ys[3].disabled = "disabled";
+
+            ys_color[6].checked = "";
+            ys_color[7].checked = "";
+            ys_color[8].checked = "";
+            ys_color[9].checked = "";
+
+            ys_color[6].disabled = "disabled";
+            ys_color[7].disabled = "disabled";
+            ys_color[8].disabled = "disabled";
+            ys_color[9].disabled = "disabled";
+        }
+    }
+    function choose_ys_kind6(ths) {
+        var kind_num = parseInt(ths.value);
+        var ys = document.getElementsByName('yinshua6');
+        var ys_color = document.getElementsByName('yinshua_color6');
+
+        if (kind_num === 1) {
+            ys[2].checked = "";
+            ys[3].checked = "";
+            ys_color[2].checked = "";
+            ys_color[3].checked = "";
+
+            ys[2].disabled = "disabled";
+            ys[3].disabled = "disabled";
+            ys_color[2].disabled = "disabled";
+            ys_color[3].disabled = "disabled";
+
+            ys[0].disabled = "";
+            ys[1].disabled = "";
+            ys_color[0].disabled = "";
+            ys_color[1].disabled = "";
+
+            ys[0].checked = "checked"; //不选择为ys[0].checked == ""
+            ys_color[0].checked = "checked"; //不选择为ys[0].checked == ""
+
+
+        }else {
+            ys[0].checked = "";
+            ys[1].checked = "";
+            ys_color[0].checked = "";
+            ys_color[1].checked = "";
+
+            ys[0].disabled = "disabled";
+            ys[1].disabled = "disabled";
+            ys_color[0].disabled = "disabled";
+            ys_color[1].disabled = "disabled";
+
+            ys[2].disabled = "";
+            ys[3].disabled = "";
+            ys_color[2].disabled = "";
+            ys_color[3].disabled = "";
+
+            ys[2].checked = "checked"; //不选择为ys[0].checked == ""
+            ys_color[2].checked = "checked"; //不选择为ys[0].checked == ""
+        }
+    }
+    function close_page() {
+        if (confirm("您确定要关闭本页吗？")){
+            window.opener=null;
+            window.open('','_self');
+            window.close();
+        }
+        else{}
+    }
+    function choose_main() {
+        // alert(22);
+        var select_kind = parseInt(document.getElementById('select_kind').value);
+
+        var ys_color2 = document.getElementsByName('yinshua_color2');
+        var medium_body = document.getElementById('medium_body');
+        var medium_main1 = document.getElementById('medium_main1');
+        var medium_main2 = document.getElementById('medium_main2');
+        var medium_main3 = document.getElementById('medium_main3');
+        var medium_main4 = document.getElementById('medium_main4');
+        var medium_main5 = document.getElementById('medium_main5');
+        var medium_main6 = document.getElementById('medium_main6');
+        var medium_main7 = document.getElementById('medium_main7');
+
+        // var medium_left2 = document.getElementById('medium_main_left2');
+        // var medium_right2 = document.getElementById('medium_main_right2');
+        //
+        // var medium_left3 = document.getElementById('medium_main_left3');
+        // var medium_right3 = document.getElementById('medium_main_right3');
+        // var lab2 = document.getElementById('cemian_lab2_2');
+        // alert(select_kind);
+        if (select_kind === 7){
+            medium_body.style.height = 740  + "px";
+            medium_main7.style.display = "block";
+            medium_main6.style.display = "none";
+            medium_main5.style.display = "none";
+            medium_main4.style.display = "none";
+            medium_main3.style.display = "none";
+            medium_main2.style.display = "none";
+            medium_main1.style.display = "none";
+        }else if (select_kind === 6) {
+            medium_body.style.height = 890 + "px";
+            medium_main7.style.display = "none";
+            medium_main6.style.display = "block";
+            medium_main5.style.display = "none";
+            medium_main4.style.display = "none";
+            medium_main3.style.display = "none";
+            medium_main2.style.display = "none";
+            medium_main1.style.display = "none";
+        }else if (select_kind === 5){
+            medium_body.style.height = 640  + "px";
+            medium_main7.style.display = "none";
+            medium_main6.style.display = "none";
+            medium_main5.style.display = "block";
+            medium_main4.style.display = "none";
+            medium_main3.style.display = "none";
+            medium_main2.style.display = "none";
+            medium_main1.style.display = "none";
+        } else if (select_kind === 4) {
+            medium_body.style.height = 690 + "px";
+            medium_main7.style.display = "none";
+            medium_main6.style.display = "none";
+            medium_main5.style.display = "none";
+            medium_main4.style.display = "block";
+            medium_main3.style.display = "none";
+            medium_main2.style.display = "none";
+            medium_main1.style.display = "none";
+        } else if (select_kind === 3) {
+            medium_body.style.height = 690  + "px";
+            medium_main7.style.display = "none";
+            medium_main6.style.display = "none";
+            medium_main5.style.display = "none";
+            medium_main4.style.display = "none";
+            medium_main3.style.display = "block";
+            medium_main2.style.display = "none";
+            medium_main1.style.display = "none";
+
+        } else if (select_kind === 2) {
+            medium_body.style.height = 690 + "px";
+            ys_color2[0].checked = "checked";
+            // lab2.style.display = "none";
+            medium_main7.style.display = "none";
+            medium_main6.style.display = "none";
+            medium_main5.style.display = "none";
+            medium_main4.style.display = "none";
+            medium_main3.style.display = "none";
+            medium_main2.style.display = "block";
+            medium_main1.style.display = "none";
+        } else {
+            medium_body.style.height = 640  + "px";
+            medium_main7.style.display = "none";
+            medium_main6.style.display = "none";
+            medium_main5.style.display = "none";
+            medium_main4.style.display = "none";
+            medium_main3.style.display = "none";
+            medium_main2.style.display = "none";
+            medium_main1.style.display = "block";
+        }
+    }
+    function choose_kuanshi1() {
+        var kuanshi = parseInt(document.getElementById('kuanshi1').value);
+        var dzxh1 = document.getElementById('dzxh1_1');
+        var dzxh2 = document.getElementById('dzxh1_2');
+        var material = document.getElementsByName('material');
+        if (kuanshi == 3){
+            material[3].checked = "checked";
+            dzxh2.style.display = "block";
+            dzxh1.style.display = "none";
+        } else {
+            material[1].checked = "checked";
+            dzxh1.style.display = "block";
+            dzxh2.style.display = "none";
+        }
+    }
+    function choose_kuanshi2() {
+        var medium_body = document.getElementById('medium_body');
+        var medium_main2 = document.getElementById('medium_main2');
+        var medium_left = document.getElementById('medium_main_left2');
+        var medium_right = document.getElementById('medium_main_right2');
+        var dibu = document.getElementById('dibu_group2');
+        var cemian = document.getElementById('cemian_group2');
+        var kuanshi = parseInt(document.getElementById('kuanshi2').value);
+        // alert("kuanshi = " + kuanshi);
+
+        var ys = document.getElementsByName('yinshua2');
+        var ys_color = document.getElementsByName('yinshua_color2');
+
+        var ys1 = document.getElementById('ys2_1');
+        var ys2 = document.getElementById('ys2_2');
+        var ys3 = document.getElementById('ys2_3');
+        var ys3_2 = document.getElementById('ys2_3_1');
+        var bf_group = document.getElementById('banfei_group2');
+        if (kuanshi == 5){
+            medium_body.style.height = 740 + "px";
+            medium_main2.style.height = 640 + "px";
+            medium_left.style.height = 600 + "px";
+            medium_right.style.height = 600 + "px";
+
+            cemian.style.display = "none";
+            dibu.style.display = "none";
+
+            // lab1.style.display = "none";
+            // lab2.style.display = "none";
+            ys3_2.style.display = "none";
+            ys3.style.display = "none";
+            ys2.style.display = "block";
+            ys1.style.display = "none";
+            ys_color[5].checked = "checked";
+            bf_group.style.display = "block";
+        }else if (kuanshi == 4){
+            medium_body.style.height = 740 + "px";
+            medium_main2.style.height = 640 + "px";
+            medium_left.style.height = 600 + "px";
+            medium_right.style.height = 600 + "px";
+            // if (cemian.style.display == "block"){
+            cemian.style.display = "none";
+            // }
+            if (dibu.style.display == "none"){
+                dibu.style.display = "block";
+            }
+            ys3_2.style.display = "none";
+            ys3.style.display = "none";
+            ys2.style.display = "block";
+            ys1.style.display = "none";
+            ys_color[5].checked = "checked";
+            bf_group.style.display = "block";
+        }if (kuanshi == 3){
+            medium_body.style.height = 740 + "px";
+            medium_main2.style.height = 640 + "px";
+            medium_left.style.height = 600 + "px";
+            medium_right.style.height = 600 + "px";
+            if (cemian.style.display == "none"){
+                cemian.style.display = "block";
+            }
+            if (dibu.style.display == "block"){
+                dibu.style.display = "none";
+            }
+            ys3_2.style.display = "block";
+            ys3.style.display = "block";
+            ys2.style.display = "none";
+            ys1.style.display = "none";
+            bf_group.style.display = "none";
+        }else if (kuanshi == 2){
+            medium_body.style.height = 740 + "px";
+            medium_main2.style.height = 640 + "px";
+            medium_left.style.height = 600 + "px";
+            medium_right.style.height = 600 + "px";
+            if (cemian.style.display == "none"){
+                cemian.style.display = "block";
+            }
+            if (dibu.style.display == "block"){
+                dibu.style.display = "none";
+            }
+            ys3_2.style.display = "none";
+            ys3.style.display = "none";
+            ys2.style.display = "block";
+            ys1.style.display = "none";
+            ys_color[5].checked = "checked";
+            bf_group.style.display = "block";
+        } else if (kuanshi == 1) {
+            medium_body.style.height = 690 + "px";
+            medium_main2.style.height = 590 + "px";
+            medium_left.style.height = 550 + "px";
+            medium_right.style.height = 550 + "px";
+            // alert("cemian = " + cemian.style.display);
+            if (cemian.style.display == "none"){
+                cemian.style.display = "block";
+            }
+            if (dibu.style.display == "block"){
+                dibu.style.display = "none";
+            }
+            ys1.style.display = "block";
+            ys2.style.display = "none";
+            ys3.style.display = "none";
+            ys3_2.style.display = "none";
+            ys_color[0].checked = "checked";
+            bf_group.style.display = "none";
+        }
+    }
+    function choose_kuanshi3() {
+        // var medium_body = document.getElementById('medium_body');
+        // var medium_main3 = document.getElementById('medium_main3');
+        // var medium_left = document.getElementById('medium_main_left3');
+        // var medium_right = document.getElementById('medium_main_right3');
+        var kuanshi = parseInt(document.getElementById('kuanshi3').value);
+        var dibu = document.getElementById('dibu_group3');
+        var cemian = document.getElementById('cemian_group3');
+        var chousheng = document.getElementById('chousheng3');
+        // var material = document.getElementsByName('material');
+        // alert("kuanshi = " + kuanshi);
+        if (kuanshi == 5){
+            cemian.style.display = "none";
+            dibu.style.display = "none";
+            chousheng.style.display = "none";
+        }else if (kuanshi == 4){
+            cemian.style.display = "none";
+            dibu.style.display = "none";
+            chousheng.style.display = "block";
+        }else if (kuanshi == 3){
+            cemian.style.display = "none";
+            dibu.style.display = "block";
+            chousheng.style.display = "none";
+        }else if (kuanshi == 2){
+            cemian.style.display = "none";
+            dibu.style.display = "block";
+            chousheng.style.display = "none";
+        }else if (kuanshi == 1) {
+            cemian.style.display = "block";
+            dibu.style.display = "none";
+            chousheng.style.display = "none";
+        }
+    }
+    function choose_kuanshi6() {
+        var kuanshi = parseInt(document.getElementById('kuanshi6').value);
+        var dibu = document.getElementById('dibu_group6');
+        var cemian = document.getElementById('cemian_group6');
+        // var material = document.getElementsByName('material');
+        // alert("kuanshi = " + kuanshi);
+        if (kuanshi == 3){
+            cemian.style.display = "none";
+            dibu.style.display = "none";
+        }else if (kuanshi == 2){
+            cemian.style.display = "none";
+            dibu.style.display = "block";
+        }else if (kuanshi == 1) {
+            cemian.style.display = "block";
+            dibu.style.display = "none";
+        }
+    }
+    function choose_kuanshi7() {
+        var kuanshi = parseInt(document.getElementById('kuanshi7').value);
+        var z1 = document.getElementById('zuogong7');
+        var z2 = document.getElementById('zuogong7_2');
+        // var material = document.getElementsByName('material');
+        // alert("kuanshi = " + kuanshi);
+        if (kuanshi == 2){
+            z1.style.display = "none";
+            z2.style.display = "block";
+        }else {
+            z1.style.display = "block";
+            z2.style.display = "none";
+        }
+    }
+    function choose_chunmian6() {
+
+        var chunmian = document.getElementsByName('chunmian6');
+        var houdu = document.getElementsByName('houdu6');
+        houdu[5].checked = "checked";
+        // alert(houdu[5].value);
+
+    }
+    function choose_houdu6() {
+
+        var chunmian = document.getElementsByName('chunmian6');
+        var houdu = document.getElementsByName('houdu6');
+        for(var i= 0;i<houdu.length;i++){
+            if (houdu[i].checked==true){
+               if (i > 4){
+                   chunmian[0].checked = "checked";
+               }else {
+                   chunmian[0].checked = "";
+               }
+                break;
+            }else{
+                if(i==houdu.length-1){
+                    // alert('袋子型号未选择.');
+                    return false;
+                }
+            }
+        }
+
+    }
+    function choose_jiachang1(ths) {
+        var jiachang = document.getElementsByName('jiachang1');
+        if (ths.checked == false){
+            jiachang[0].disabled = "disabled";
+            jiachang[1].disabled = "disabled";
+            jiachang[0].checked = "";
+            jiachang[1].checked = "";
+        } else {
+            jiachang[0].disabled = "";
+            jiachang[1].disabled = "";
+            jiachang[0].checked = "checked";
+        }
+
+    }
+    function choose_jiachang2(ths) {
+        var jiachang = document.getElementsByName('jiachang2');
+        if (ths.checked == false){
+            jiachang[0].disabled = "disabled";
+            jiachang[1].disabled = "disabled";
+            jiachang[0].checked = "";
+            jiachang[1].checked = "";
+        } else {
+            jiachang[0].disabled = "";
+            jiachang[1].disabled = "";
+            jiachang[0].checked = "checked";
+        }
+
+    }
+    function choose_jiachang3(ths) {
+        var jiachang = document.getElementsByName('jiachang3');
+        if (ths.checked == false){
+            jiachang[0].disabled = "disabled";
+            jiachang[1].disabled = "disabled";
+            jiachang[0].checked = "";
+            jiachang[1].checked = "";
+        } else {
+            jiachang[0].disabled = "";
+            jiachang[1].disabled = "";
+            jiachang[0].checked = "checked";
+        }
+
+    }
+    function choose_jiachang4(ths) {
+        var jiachang = document.getElementsByName('jiachang4');
+        if (ths.checked == false){
+            jiachang[0].disabled = "disabled";
+            jiachang[1].disabled = "disabled";
+            jiachang[0].checked = "";
+            jiachang[1].checked = "";
+        } else {
+            jiachang[0].disabled = "";
+            jiachang[1].disabled = "";
+            jiachang[0].checked = "checked";
+        }
+
+    }
+    function choose_jiachang5(ths) {
+        var jiachang = document.getElementsByName('jiachang5');
+        if (ths.checked == false){
+            jiachang[0].disabled = "disabled";
+            jiachang[1].disabled = "disabled";
+            jiachang[0].checked = "";
+            jiachang[1].checked = "";
+        } else {
+            jiachang[0].disabled = "";
+            jiachang[1].disabled = "";
+            jiachang[0].checked = "checked";
+        }
+
+    }
+</script>
+
+<body>
+<div class="container">
+    <div class="medium_body" id="medium_body">
+        <div class="medium_head">
+            <h2>无纺布袋自动报价器</h2>
+            <select id="select_kind" class="select_kind" onchange="choose_main()">
+                <option value="1" selected>
+                    现货立体袋
+                </option>
+                <option value="2">
+                    定制立体袋
+                </option>
+                <option value="3">
+                    车缝无纺布袋
+                </option>
+                <option value="4">
+                    覆膜无纺布袋
+                </option>
+                <option value="5">
+                    折叠无纺布袋
+                </option>
+                <option value="6">
+                    帆布袋
+                </option>
+                <option value="7">
+                    手提到底手提袋
+                </option>
+            </select>
+        </div>
+        <div id="medium_main1" class="medium_main">
+            <div class="medium_main_left">
+                <div class="form_group">
+                    <div class="form_lab">
+                        款式选项:
+                    </div>
+                    <select id="kuanshi1" class="kuanshi_kind" style="float: left" onchange="choose_kuanshi1()">
+                        <option value="1" selected>
+                            立体袋
+                        </option>
+                        <option value="2">
+                            斜角袋
+                        </option>
+                        <option value="3">
+                            平口袋
+                        </option>
+                        <option value="4">
+                            覆膜立体袋
+                        </option>
+
+                    </select>
+                </div>
+                <div class="form_group" style="width: 98%">
+                    <div class="form_lab">
+                        袋子型号:
+                    </div>
+                    <!--立体袋-->
+                    <!--<input type="radio" name="material" value="0.4" style="margin: 21px 0 0 5px"/><span>小号</span>-->
+                    <!--<input type="radio" name="material" value="0.48" checked/><span>中号</span>-->
+                    <!--<input type="radio" name="material" value="0.59" /><span>大号</span>-->
+                    <div id="dzxh1_1">
+                        <input type="radio" name="material" value="1" style="margin: 21px 0 0 5px"/><span>小号</span>
+                        <input type="radio" name="material" value="2" checked /><span>中号</span>
+                        <input type="radio" name="material" value="3" /><span>大号</span>
+                    </div>
+                    <div id="dzxh1_2" style="display:none;font-size: 12px">
+                        <input type="radio" name="material" value="1" style="margin: 21px 0 0 5px"/><span>25*30</span>
+                        <input type="radio" name="material" value="2"/><span>25*35</span>
+                        <input type="radio" name="material" value="3" /><span>30*40</span>
+                        <input type="radio" name="material" value="4" /><span>35*45</span>
+                        <input type="radio" name="material" value="5" /><span>40*50</span>
+                    </div>
+                    <!--斜角袋-->
+                    <!--<input type="radio" name="material" value="0.28" style="margin: 21px 0 0 5px"/><span>小号</span>-->
+                    <!--<input type="radio" name="material" value="0.34" checked/><span>中号</span>-->
+                    <!--<input type="radio" name="material" value="0.42" /><span>大号</span>-->
+                    <!--&lt;!&ndash;平口袋&ndash;&gt;-->
+                    <!--<input type="radio" name="material" value="0.4" style="margin: 21px 0 0 5px"/><span>小号</span>-->
+                    <!--<input type="radio" name="material" value="0.48" checked/><span>中号</span>-->
+                    <!--<input type="radio" name="material" value="0.59" /><span>大号</span>-->
+                    <!--&lt;!&ndash;附魔立体袋&ndash;&gt;-->
+                    <!--<input type="radio" name="material" value="0.4" style="margin: 21px 0 0 5px"/><span>小号</span>-->
+                    <!--<input type="radio" name="material" value="0.48" checked/><span>中号</span>-->
+                    <!--<input type="radio" name="material" value="0.59" /><span>大号</span>-->
+                </div>
+                <form id="input_form1">
+                    <div class="form_group">
+                        <div class="form_lab">
+                            数量(个):
+                        </div>
+                        <!--<input type="text" id="number" class="form_input" οnkeyup="value=value.replace(/[^\-?\d.]/g,'')">-->
+                        <input type="text" id="number1" class="form_input" onkeyup="value=value.replace(/[^\d]/g,'')"  />
+                    </div>
+                    <div class="form_group">
+                        <!--<input type="radio" name="ys_kind" style="margin: 10px 0 0 30px">-->
+                        <div class="form_lab">
+                            <input type="radio" name="yinshua_kind1" value="1" onclick="choose_ys_kind1(this)" checked>
+                            印刷:
+                        </div>
+                        <input type="radio" name="yinshua1" value="1" style="margin: 10px 0 0 10px" /><span>单面</span>
+                        <input type="radio" name="yinshua1" value="2"  style="margin: 10px 0 0 10px" checked/><span>双面</span>
+                        <br/>
+                        <input type="radio" name="yinshua_color1" value="1" style="margin: 10px 0 0 10px" checked/><span>一色</span>
+                        <input type="radio" name="yinshua_color1" value="2"  style="margin: 5px 0 0 10px" /><span>双色</span>
+                        <input type="radio" name="yinshua_color1" value="3"  style="margin: 5px 0 0 10px"  /><span>三色</span>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            <input type="radio" name="yinshua_kind1" value="4" onclick="choose_ys_kind1(this)">
+                            天晨:
+                        </div>
+                        <input type="radio" name="yinshua_color1" value="1" style="margin: 21px 0 0 10px" disabled/><span>一色</span>
+                        <input type="radio" name="yinshua_color1" value="2"  style="margin: 5px 0 0 10px"  disabled/><span>双色</span>
+
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            利润:
+                        </div>
+                        <input type="text" id="lirun1" class="form_input" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            单价:
+                        </div>
+                        <input type="text" id="danjia1" class="form_input" onfocus="this.blur()"/>
+                    </div>
+                    <input type="button" class="mybutton" id="submit1" value="报价" onclick="show_price1()">
+                    <input type="button" class="mybutton2"  id="clear1" value="清除" onclick="clear_data()">
+                </form>
+            </div>
+            <div class="medium_main_right">
+                <!--<input type="button" id="fujia" class="fujia" value="附加工艺" onclick="show_gongyi()">-->
+                <div class="gongyi_kind" id="gongyi_kind1">
+                    <h6 style="text-align: center;margin: 15px 0 0 0">附加工艺</h6>
+                    <div style="margin:10px 0 0 60px">
+                        <input type="checkbox" id="stjc1" value="手提加长" onclick="choose_jiachang1(this)" /><span>手提加长</span><input type="radio" name="jiachang1" value="0.15" style="margin: 10px 0 0 10px" disabled/><span>60</span><input type="radio" name="jiachang1" value="0.18"  style="margin: 10px 0 0 10px" disabled/><span>70</span>
+                        <br/>
+                        <input type="checkbox" id="ddbz1" value="单独包装" /><span>单独包装</span><input type="text" class="input_sec" id="ddbz_input1" >
+                        <br/>
+                        <input type="checkbox" id="niukou1" value="纽扣" /><span>纽扣</span><input type="text" class="input_sec" id="niukou_input1" value="0.05">
+                        <br/>
+                        <input type="checkbox" id="zhongliang1" value="重量" onclick="get_weight1()"/>
+                        <span>重量</span><input type="text" class="input_sec" id="zhongliang_input1" onmouseover="get_weight1()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="kddj1" value="kddj" />
+                        <span>快递单价</span><input type="text" class="input_sec" id="kddj_input1" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="yunfei1" value="运费" onclick="get_yunfei1()" />
+                        <span>运费</span><input type="text" id="yunfei_input1" class="input_sec" onmouseover="get_yunfei1()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="zhixiang1" value="纸箱" /><span>纸箱</span><input type="text" class="input_sec" id="zhixiang_input1" value="0.04">
+                        <br/>
+                        <input type="checkbox" id="ptfp1" value="ptfp" /><span>普通发票</span><input type="text" class="input_sec" id="ptfp_input1">
+                        <br/>
+                        <input type="checkbox" id="zyfp1" value="zyfp"/><span>专用发票</span><input type="text" class="input_sec" id="zyfp_input1">
+                        <br/>
+                        <input type="checkbox" id="qita" value="其他" /><span>其他</span><input type="text" class="input_sec" id="qita_input1">
+                        <br/>
+
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <div id="medium_main2" class="medium_main" style="height: 590px;display: none">
+            <div id="medium_main_left2" class="medium_main_left" style="height: 550px;font-size: 12px;">
+
+                <form id="input_form2">
+                    <div class="form_group">
+                        <div class="form_lab">
+                            款式选项:
+                        </div>
+                        <select id="kuanshi2" class="kuanshi_kind" style="float: left" onchange="choose_kuanshi2()">
+                            <option value="1" selected>
+                                普通立体袋
+                            </option>
+                            <option value="2">
+                                覆膜立体袋
+                            </option>
+                            <option value="3">
+                                现货抽绳背包袋
+                            </option>
+                            <option value="4">
+                                定制斜角袋
+                            </option>
+                            <option value="5">
+                                定制平口袋
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            数量(个):
+                        </div>
+                        <!--<input type="text" id="number" class="form_input" οnkeyup="value=value.replace(/[^\-?\d.]/g,'')">-->
+                        <input type="text" id="number2" class="form_input"  onkeyup="value=value.replace(/[^\d]/g,'')"  />
+                    </div>
+
+                    <div class="form_group">
+                        <div class="form_lab">
+                            宽(cm):
+                        </div>
+                        <input type="text" id="kuan2" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            高(cm):
+                        </div>
+                        <input type="text" id="gao2" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div id="cemian_group2" class="form_group">
+                        <div id="cemian_lab2" class="form_lab">
+                            侧面(cm):
+                        </div>
+                        <input type="text" id="cemian2" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div id="dibu_group2" class="form_group" style="display: none">
+                        <div class="form_lab">
+                            底部(cm):
+                        </div>
+                        <input type="text" id="dibu2" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            克重(克/m<sup>2</sup>):
+                        </div>
+                        <input type="text" id="kezhong2" class="form_input" value="80"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            做工:
+                        </div>
+                        <input type="text" id="zuogong2" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div id="ys2_1" class="form_group" style="width: 98%">
+                        <div class="form_lab">印刷:</div>
+                        <input type="radio" name="yinshua_color2" value="1" style="margin: 20px 0 0 10px" /><span>一色</span>
+                        <input type="radio" name="yinshua_color2" value="2"  style="margin: 0 0 0 5px" /><span>双色</span>
+                        <input type="radio" name="yinshua_kind2" value="1" style="margin: 10px 0 0 5px" /><span>无印刷</span>
+
+                    </div>
+                    <div id="ys2_2" class="form_group" style="width: 98%;display: none">
+                        <div class="form_lab">印刷:</div>
+                        <input type="radio" name="yinshua_color2" value="1" style="margin: 12px 0 0 10px"/><span>一色</span>
+                        <input type="radio" name="yinshua_color2" value="2"  style="margin: 0 0 0 5px" /><span>双色</span>
+                        <input type="radio" name="yinshua_color2" value="3"  style="margin: 0 0 0 5px" /><span>三色</span>
+                        <input type="radio" name="yinshua_color2" value="4"  style="margin: 0 0 0 5px"/><span>四色</span>
+                        <input type="radio" name="yinshua_kind2" value="2" style="margin: 5px 0 0 10px" /><span>无印刷</span>
+                    </div>
+                    <div id="ys2_3" class="form_group" style="display:none">
+                        <div class="form_lab">
+                            <input type="radio" name="yinshua_kind2" value="3" onclick="choose_ys_kind2(this)" checked>
+                            印刷:
+                        </div>
+                        <input type="radio" name="yinshua2" value="1" style="margin: 10px 0 0 10px"  disabled/><span>单面</span>
+                        <input type="radio" name="yinshua2" value="2"  style="margin: 10px 0 0 5px" disabled/><span>双面</span>
+                        <input type="radio" name="yinshua_kind2" value="4" onclick="choose_ys_kind2(this)" style="margin: 10px 0 0 5px" /><span>无印刷</span>
+                        <br/>
+                        <input type="radio" name="yinshua_color2" value="1" style="margin: 5px 0 0 10px" disabled/><span>一色</span>
+                        <input type="radio" name="yinshua_color2" value="2"  style="margin: 5px 0 0 5px" disabled/><span>双色</span>
+                                           </div>
+                    <div id="ys2_3_1" class="form_group" style="display:none">
+                        <div class="form_lab">
+                            <input type="radio" name="yinshua_kind2" value="5" onclick="choose_ys_kind2(this)" >
+                            印刷后<br/>
+                            再做:
+                        </div>
+                        <input type="radio" name="yinshua2" value="1" style="margin: 20px 0 0 10px"  disabled/><span>单面</span>
+                        <input type="radio" name="yinshua2" value="2"  style="margin: 10px 0 0 5px" disabled/><span>双面</span>
+                        <br/>
+                        <input type="radio" name="yinshua_color2" value="1" style="margin: 5px 0 0 10px" disabled/><span>一色</span>
+                        <input type="radio" name="yinshua_color2" value="2"  style="margin: 5px 0 0 5px" disabled/><span>双色</span>
+
+                        <br/>
+                    </div>
+                    <div id="banfei_group2" class="form_group" style="display: none">
+                        <div class="form_lab" style="width: 15%">
+                            版费:
+                        </div>
+                        <input type="text" id="banfei2" class="form_input" onmouseover="get_banfei2()"  style="width: 20%"/>
+                        <div class="form_lab" style="width: 25%">
+                            平均版费:
+                        </div>
+                        <input type="text" id="pj_banfei2" class="form_input"  style="width: 20%"/>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            利润:
+                        </div>
+                        <input type="text" id="lirun2" class="form_input" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            单价:
+                        </div>
+                        <input type="text" id="danjia2" class="form_input" onfocus="this.blur()"/>
+                    </div>
+                    <input type="button" class="mybutton" id="submit2" value="报价" onclick="show_price2()">
+                    <input type="button" class="mybutton2"  id="clear2" value="清除" onclick="clear_data()">
+                </form>
+            </div>
+            <div id="medium_main_right3" class="medium_main_right" style="height: 550px">
+                <!--<input type="button" id="fujia" class="fujia" value="附加工艺" onclick="show_gongyi()">-->
+                <div class="gongyi_kind" id="gongyi_kind2">
+                    <h6 style="text-align: center;margin: 15px 0 0 0">附加工艺</h6>
+                    <div style="margin:10px 0 0 60px">
+                        <input type="checkbox" id="niukou2" value="纽扣" /><span>纽扣</span><input type="text" id="niukou_input2" class="input_sec" value="0.05">
+                        <br/>
+                        <input type="checkbox" id="zhongliang2" value="重量" onclick="get_weight2()"/>
+                        <span>重量</span><input type="text" class="input_sec" id="zhongliang_input2" onmouseover="get_weight2()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="kddj2" value="kddj" />
+                        <span>快递单价</span><input type="text" class="input_sec" id="kddj_input2" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="yunfei2" value="运费" onclick="get_yunfei2()" />
+                        <span>运费</span><input type="text" id="yunfei_input2" class="input_sec" onmouseover="get_yunfei2()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="stjc2" value="手提加长" onclick="choose_jiachang2(this)"/><span>手提加长</span><input type="radio" name="jiachang2" value="0.15" style="margin: 10px 0 0 10px" disabled/><span>60</span><input type="radio" name="jiachang2" value="0.18"  style="margin: 10px 0 0 10px" disabled/><span>70</span>
+                        <br/>
+                        <input type="checkbox" id="zhixiang2" value="纸箱" /><span>纸箱</span><input type="text" id="zhixiang_input2" class="input_sec" value="0.04">
+                        <br/>
+                        <input type="checkbox" id="ddbz2" value="单独包装" /><span>单独包装</span><input type="text" id="ddbz_input2" class="input_sec">
+                        <br/>
+
+                        <input type="checkbox" id="ptfp2" value="ptfp" /><span>普通发票</span><input type="text" id="ptfp_input2" class="input_sec">
+
+                        <br/>
+                        <input type="checkbox" id="zyfp2" value="zyfp"/><span>专用发票</span><input type="text" id="zyfp_input2" class="input_sec">
+                        <br/>
+                        <input type="checkbox" id="bljg2" value="布料价格"/><span>布料价格</span><input type="text" id="bljg_input2" class="input_sec" value="12">
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <div id="medium_main3" class="medium_main" style="height: 590px;display: none">
+            <div class="medium_main_left" style="height: 550px;font-size: 12px;">
+
+                <form id="input_form3">
+                    <div class="form_group">
+                        <div class="form_lab">
+                            款式选项:
+                        </div>
+                        <select id="kuanshi3" class="kuanshi_kind" style="float: left" onchange="choose_kuanshi3()">
+                            <option value="1" selected>
+                                有底有侧
+                            </option>
+                            <option value="2">
+                                有底无侧
+                            </option>
+                            <option value="3">
+                                无底无侧
+                            </option>
+                            <option value="4">
+                                束口袋
+                            </option>
+                            <option value="5">
+                                抽绳背包袋
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            数量(个):
+                        </div>
+                        <!--<input type="text" id="number" class="form_input" οnkeyup="value=value.replace(/[^\-?\d.]/g,'')">-->
+                        <input type="text" id="number3" class="form_input" onkeyup="value=value.replace(/[^\d]/g,'')"  />
+                    </div>
+
+                    <div class="form_group">
+                        <div class="form_lab">
+                            宽(cm):
+                        </div>
+                        <input type="text" id="kuan3" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            高(cm):
+                        </div>
+                        <input type="text" id="gao3" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div id="cemian_group3" class="form_group">
+                        <div class="form_lab">
+                            侧面(cm):
+                        </div>
+                        <input type="text" id="cemian3" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div id="dibu_group3" class="form_group" style="display: none">
+                        <div class="form_lab">
+                            底部(cm):
+                        </div>
+                        <input type="text" id="dibu3" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            克重(克/m<sup>2</sup>):
+                        </div>
+                        <input type="text" id="kezhong3" class="form_input" value="80"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            做工:
+                        </div>
+                        <input type="text" id="zuogong3" class="form_input" value="0.3" onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">印刷:</div>
+                        <input type="radio" name="yinshua3" value="1" style="margin: 10px 0 0 10px"  /><span>单面</span>
+                        <input type="radio" name="yinshua3" value="2"  style="margin: 10px 0 0 10px" checked/><span>双面</span>
+                        <br/>
+                        <input type="radio" name="yinshua_color3" value="1" style="margin: 5px 0 0 10px" checked/><span>一色</span>
+                        <input type="radio" name="yinshua_color3" value="2"  style="margin: 5px 0 0 10px" /><span>双色</span>
+                        <input type="radio" name="yinshua_color3" value="3"  style="margin: 5px 0 0 10px" /><span>三色</span>
+                    </div>
+                    <div id="chousheng3" class="form_group" style="display: none">
+                        <div class="form_lab">抽绳:</div>
+                        <input type="radio" name="chousheng3" value="1" style="margin: 20px 0 0 10px"  /><span>单抽</span>
+                        <input type="radio" name="chousheng3" value="2"  style="margin: 10px 0 0 10px" /><span>双抽</span>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            利润:
+                        </div>
+                        <input type="text" id="lirun3" class="form_input" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            单价:
+                        </div>
+                        <input type="text" id="danjia3" class="form_input" onfocus="this.blur()"/>
+                    </div>
+                    <input type="button" class="mybutton" id="submit3" value="报价" onclick="show_price3()">
+                    <input type="button" class="mybutton2"  id="clear3" value="清除" onclick="clear_data()">
+                </form>
+            </div>
+            <div class="medium_main_right" style="height: 550px">
+                <!--<input type="button" id="fujia" class="fujia" value="附加工艺" onclick="show_gongyi()">-->
+                <div class="gongyi_kind" id="gongyi_kind3">
+                    <h6 style="text-align: center;margin: 15px 0 0 0">附加工艺</h6>
+                    <div style="margin:10px 0 0 60px">
+                        <input type="checkbox" id="dacha3" value="打叉"/><span>打叉</span><input type="text" id="dacha_input3" class="input_sec" value="0.07">
+                        <br/>
+                        <input type="checkbox" id="bbdzjg3" value="包边倒针加固" /><span>包边倒针加固</span><input type="text" id="bbdzjg_input3" class="input_sec" value="0.07">
+                        <br/>
+                        <input type="checkbox" id="niukou3" value="纽扣" /><span>纽扣</span><input type="text" id="niukou_input3" class="input_sec" value="0.05">
+                        <br/>
+                        <input type="checkbox" id="zhongliang3" value="重量" onclick="get_weight3()"/>
+                        <span>重量</span><input type="text" class="input_sec" id="zhongliang_input3" onmouseover="get_weight3()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="kddj3" value="kddj" />
+                        <span>快递单价</span><input type="text" class="input_sec" id="kddj_input3" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="yunfei3" value="运费" onclick="get_yunfei3()" />
+                        <span>运费</span><input type="text" id="yunfei_input3" class="input_sec" onmouseover="get_yunfei3()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="stjc3" value="手提加长" onclick="choose_jiachang3(this)"/><span>手提加长</span><input type="radio" name="jiachang3" value="0.09" style="margin: 10px 0 0 10px" disabled/><span>60</span><input type="radio" name="jiachang3" value="0.11"  style="margin: 10px 0 0 10px" disabled/><span>70</span>
+                        <br/>
+                        <input type="checkbox" id="zhixiang3" value="纸箱" /><span>纸箱</span><input type="text" id="zhixiang_input3" class="input_sec" value="0.04">
+                        <br/>
+                        <input type="checkbox" id="ddbz3" value="单独包装" /><span>单独包装</span><input type="text" id="ddbz_input3" class="input_sec">
+                        <br/>
+
+                        <input type="checkbox" id="ptfp3" value="ptfp" /><span>普通发票</span><input type="text" id="ptfp_input3" class="input_sec">
+
+                        <br/>
+                        <input type="checkbox" id="zyfp3" value="zyfp"/><span>专用发票</span><input type="text" id="zyfp_input3" class="input_sec">
+                        <br/>
+                        <input type="checkbox" id="bljg3" value="布料价格"/><span>布料价格</span><input type="text" id="bljg_input3" class="input_sec" value="12">
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <div id="medium_main4" class="medium_main" style="height: 590px;display: none">
+            <div class="medium_main_left" style="height: 550px;font-size: 12px;">
+
+                <form id="input_form4">
+                    <div class="form_group">
+                        <div class="form_lab">
+                            数量(个):
+                        </div>
+                        <!--<input type="text" id="number" class="form_input" οnkeyup="value=value.replace(/[^\-?\d.]/g,'')">-->
+                        <input type="text" id="number4" class="form_input" onkeyup="value=value.replace(/[^\d]/g,'')"  />
+                    </div>
+
+                    <div class="form_group">
+                        <div class="form_lab">
+                            宽(cm):
+                        </div>
+                        <input type="text" id="kuan4" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            高(cm):
+                        </div>
+                        <input type="text" id="gao4" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            侧面(cm):
+                        </div>
+                        <input type="text" id="cemian4" class="form_input" onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            克重(克/m<sup>2</sup>):
+                        </div>
+                        <input type="text" id="kezhong4" class="form_input" value="80"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            做工:
+                        </div>
+                        <input type="text" id="zuogong4" class="form_input" value="0.32"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group" style="width: 98%">
+                        <div class="form_lab" style="width: 20%">印刷:</div>
+                        <input type="radio" name="yinshua_color4" value="1" style="margin: 20px 0 0 10px"  /><span>一色</span><input type="radio" name="yinshua_color4" value="2"  style="margin: 5px 0 0 10px" /><span>双色</span><input type="radio" name="yinshua_color4" value="3"  style="margin: 5px 0 0 10px" /><span>三色</span>
+                        <input type="radio" name="yinshua_color4" value="4"  style="margin: 5px 0 0 10px" checked/><span>四色</span>
+
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab" style="width: 15%">
+                            版费:
+                        </div>
+                        <input type="text" id="banfei4" class="form_input" onmouseover="get_banfei4()"  style="width: 20%"/>
+                        <div class="form_lab" style="width: 25%">
+                            平均版费:
+                        </div>
+                        <input type="text" id="pj_banfei4" class="form_input"  style="width: 20%"/>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            利润:
+                        </div>
+                        <input type="text" id="lirun4" class="form_input" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            单价:
+                        </div>
+                        <input type="text" id="danjia4" class="form_input" onfocus="this.blur()"/>
+                    </div>
+                    <input type="button" class="mybutton" id="submit4" value="报价" onclick="show_price4()">
+                    <input type="button" class="mybutton2"  id="clear4" value="清除" onclick="clear_data()">
+                </form>
+            </div>
+            <div class="medium_main_right" style="height: 550px">
+                <!--<input type="button" id="fujia" class="fujia" value="附加工艺" onclick="show_gongyi()">-->
+                <div class="gongyi_kind" id="gongyi_kind4">
+                    <h6 style="text-align: center;margin: 15px 0 0 0">附加工艺</h6>
+                    <div style="margin:10px 0 0 60px">
+                        <input type="checkbox" id="dacha4" value="打叉"/><span>打叉</span><input type="text" id="dacha_input4" class="input_sec" value="0.07">
+                        <br/>
+                        <input type="checkbox" id="bbdzjg4" value="包边倒针加固" /><span>包边倒针加固</span><input type="text" id="bbdzjg_input4" class="input_sec" value="0.07">
+                        <br/>
+                        <input type="checkbox" id="niukou4" value="纽扣" /><span>纽扣</span><input type="text" id="niukou_input4" class="input_sec" value="0.05">
+                        <br/>
+                        <input type="checkbox" id="zhongliang4" value="重量" onclick="get_weight4()"/>
+                        <span>重量</span><input type="text" class="input_sec" id="zhongliang_input4" onmouseover="get_weight4()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="kddj4" value="kddj" />
+                        <span>快递单价</span><input type="text" class="input_sec" id="kddj_input4" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="yunfei4" value="运费" onclick="get_yunfei4()" />
+                        <span>运费</span><input type="text" id="yunfei_input4" class="input_sec" onmouseover="get_yunfei4()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="stjc4" value="手提加长" onclick="choose_jiachang4(this)"/><span>手提加长</span><input type="radio" name="jiachang4" value="0.15" style="margin: 10px 0 0 10px"  disabled/><span>60</span><input type="radio" name="jiachang4" value="0.18"  style="margin: 10px 0 0 10px" disabled/><span>70</span>
+                        <br/>
+                        <input type="checkbox" id="zhixiang4" value="纸箱" /><span>纸箱</span><input type="text" id="zhixiang_input4" class="input_sec" value="0.04">
+                        <br/>
+                        <input type="checkbox" id="ddbz4" value="单独包装" /><span>单独包装</span><input type="text" id="ddbz_input4" class="input_sec">
+                        <br/>
+
+                        <input type="checkbox" id="ptfp4" value="ptfp" /><span>普通发票</span><input type="text" id="ptfp_input4" class="input_sec">
+
+                        <br/>
+                        <input type="checkbox" id="zyfp4" value="zyfp"/><span>专用发票</span><input type="text" id="zyfp_input4" class="input_sec">
+                        <br/>
+                        <input type="checkbox" id="bljg4" value="布料价格"/><span>布料价格</span><input type="text" id="bljg_input4" class="input_sec" value="12">
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <div id="medium_main5" class="medium_main" style="display: none">
+            <div class="medium_main_left" style="height: 500px;font-size: 12px;">
+
+                <form id="input_form5">
+                    <div class="form_group">
+                        <div class="form_lab">
+                            数量(个):
+                        </div>
+                        <!--<input type="text" id="number" class="form_input" οnkeyup="value=value.replace(/[^\-?\d.]/g,'')">-->
+                        <input type="text" id="number5" class="form_input" onkeyup="value=value.replace(/[^\d]/g,'')"  />
+                    </div>
+
+                    <div class="form_group">
+                        <div class="form_lab">
+                            宽(cm):
+                        </div>
+                        <input type="text" id="kuan5" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            高(cm):
+                        </div>
+                        <input type="text" id="gao5" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            侧面(cm):
+                        </div>
+                        <input type="text" id="cemian5" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            克重(克/m<sup>2</sup>):
+                        </div>
+                        <input type="text" id="kezhong5" class="form_input" value="80"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            做工:
+                        </div>
+                        <input type="text" id="zuogong5" class="form_input" value="0.5"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">印刷:</div> <input type="radio" name="yinshua5" value="1" style="margin: 10px 0 0 10px"  /><span>单面</span><input type="radio" name="yinshua5" value="2"  style="margin: 10px 0 0 10px" checked/><span>双面</span><br/>
+                        <input type="radio" name="yinshua_color5" value="1" style="margin: 5px 0 0 10px"  checked/><span>一色</span><input type="radio" name="yinshua_color5" value="2"  style="margin: 5px 0 0 10px" /><span>双色</span><input type="radio" name="yinshua_color5" value="3"  style="margin: 5px 0 0 10px" /><span>三色</span>
+
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            利润:
+                        </div>
+                        <input type="text" id="lirun5" class="form_input" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            单价:
+                        </div>
+                        <input type="text" id="danjia5" class="form_input" onfocus="this.blur()"/>
+                    </div>
+                    <input type="button" class="mybutton" id="submit5" value="报价" onclick="show_price5()">
+                    <input type="button" class="mybutton2"  id="clear5" value="清除" onclick="clear_data()">
+                </form>
+            </div>
+            <div class="medium_main_right">
+                <!--<input type="button" id="fujia" class="fujia" value="附加工艺" onclick="show_gongyi()">-->
+                <div class="gongyi_kind" id="gongyi_kind5">
+                    <h6 style="text-align: center;margin: 15px 0 0 0">附加工艺</h6>
+                    <div style="margin:10px 0 0 60px">
+                        <input type="checkbox" id="dacha5" value="打叉"/><span>打叉</span><input type="text" id="dacha_input5" class="input_sec" value="0.07">
+                        <br/>
+                        <input type="checkbox" id="bbdzjg5" value="包边倒针加固" /><span>包边倒针加固</span><input type="text" id="bbdzjg_input5" class="input_sec" value="0.07">
+                        <br/>
+                        <input type="checkbox" id="niukou5" value="纽扣" /><span>纽扣</span><input type="text" id="niukou_input5" class="input_sec" value="0.05">
+                        <br/>
+                        <input type="checkbox" id="zhongliang5" value="重量" onclick="get_weight5()"/>
+                        <span>重量</span><input type="text" class="input_sec" id="zhongliang_input5" onmouseover="get_weight5()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="kddj5" value="kddj" />
+                        <span>快递单价</span><input type="text" class="input_sec" id="kddj_input5" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="yunfei5" value="运费" onclick="get_yunfei5()" />
+                        <span>运费</span><input type="text" id="yunfei_input5" class="input_sec" onmouseover="get_yunfei5()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="stjc5" value="手提加长" onclick="choose_jiachang5(this)"/><span>手提加长</span><input type="radio" name="jiachang5" value="0.15" style="margin: 10px 0 0 10px"  disabled/><span>60</span><input type="radio" name="jiachang5" value="0.18"  style="margin: 10px 0 0 10px" disabled/><span>70</span>
+                        <br/>
+                        <input type="checkbox" id="zhixiang5" value="纸箱" /><span>纸箱</span><input type="text" id="zhixiang_input5" class="input_sec" value="0.04">
+                        <br/>
+                        <input type="checkbox" id="ddbz5" value="单独包装" /><span>单独包装</span><input type="text" id="ddbz_input5" class="input_sec">
+                        <br/>
+
+                        <input type="checkbox" id="ptfp5" value="ptfp" /><span>普通发票</span><input type="text" id="ptfp_input5" class="input_sec">
+
+                        <br/>
+                        <input type="checkbox" id="zyfp5" value="zyfp"/><span>专用发票</span><input type="text" id="zyfp_input5" class="input_sec">
+                        <br/>
+                        <input type="checkbox" id="bljg5" value="布料价格"/><span>布料价格</span><input type="text" id="bljg_input5" class="input_sec" value="12">
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <div id="medium_main6" class="medium_main" style="height: 800px;display: none">
+            <div class="medium_main_left" style="height: 750px;font-size: 12px;">
+
+                <form id="input_form6">
+                    <div class="form_group">
+                        <div class="form_lab">
+                            款式选项:
+                        </div>
+                        <select id="kuanshi6" class="kuanshi_kind" style="float: left" onchange="choose_kuanshi6()">
+                            <option value="1" selected>
+                                有底有侧
+                            </option>
+                            <option value="2">
+                                有底无侧
+                            </option>
+                            <option value="3">
+                                无底无侧
+                            </option>
+
+                        </select>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            数量(个):
+                        </div>
+                        <!--<input type="text" id="number" class="form_input" οnkeyup="value=value.replace(/[^\-?\d.]/g,'')">-->
+                        <input type="text" id="number6" class="form_input" onkeyup="value=value.replace(/[^\d]/g,'')"  />
+                    </div>
+
+                    <div class="form_group">
+                        <div class="form_lab">
+                            宽(cm):
+                        </div>
+                        <input type="text" id="kuan6" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            高(cm):
+                        </div>
+                        <input type="text" id="gao6" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div id="cemian_group6" class="form_group">
+                        <div class="form_lab">
+                            侧面(cm):
+                        </div>
+                        <input type="text" id="cemian6" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div id="dibu_group6" class="form_group" style="display: none">
+                        <div class="form_lab">
+                            底部(cm):
+                        </div>
+                        <input type="text" id="dibu6" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            长(cm):
+                        </div>
+                        <input type="text" id="chang6" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                           厚度(安):
+                        </div>
+                        <input type="radio" name="houdu6" value="5" style="margin: 10px 0 0 10px" checked  onclick="choose_houdu6()"/><span>5</span>
+                        <input type="radio" name="houdu6" value="8"  style="margin: 10px 0 0 10px"   onclick="choose_houdu6()"/><span>8</span>
+                        <input type="radio" name="houdu6" value="10"  style="margin: 10px 0 0 10px"   onclick="choose_houdu6()"/><span>10</span>
+                        <br/>
+                        <input type="radio" name="houdu6" value="12" style="margin: 5px 0 0 10px"   onclick="choose_houdu6()"/><span>12</span>
+                        <input type="radio" name="houdu6" value="16"  style="margin: 5px 0 0 3px"   onclick="choose_houdu6()"/><span>16</span>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            <input type="radio" name="chunmian6" onclick="choose_chunmian6()"/>
+                            纯棉(安):
+                        </div>
+                        <input type="radio" name="houdu6" value="8"  style="margin: 22px 0 0 10px"   onclick="choose_houdu6()"/><span>8</span>
+                        <input type="radio" name="houdu6" value="10"  style="margin: 0 0 0 5px"   onclick="choose_houdu6()"/><span>10</span>
+                        <input type="radio" name="houdu6" value="12" style="margin: 0 0 0 5px"   onclick="choose_houdu6()"/><span>12</span>
+                        <input type="radio" name="houdu6" value="16"  style="margin: 0 0 0 5px"   onclick="choose_houdu6()"/><span>16</span>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            克重(克/m<sup>2</sup>):
+                        </div>
+                        <input type="text" id="kezhong6" class="form_input" value="80"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            做工:
+                        </div>
+                        <input type="text" id="zuogong6" class="form_input" value="1" onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            <input type="radio" name="yinshua_kind6" value="1" onclick="choose_ys_kind6(this)" >
+                            彩印:
+                        </div>
+                        <input type="radio" name="yinshua6" value="1" style="margin: 10px 0 0 10px"  disabled/><span>单面</span>
+                        <input type="radio" name="yinshua6" value="2"  style="margin: 10px 0 0 10px" disabled/><span>双面</span>
+                        <br/>
+                        <input type="radio" name="yinshua_color6" value="1" style="margin: 5px 0 0 10px" disabled/><span>一色</span>
+                        <input type="radio" name="yinshua_color6" value="2"  style="margin: 5px 0 0 10px" disabled/><span>双色</span>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            <input type="radio" name="yinshua_kind6" value="2" onclick="choose_ys_kind6(this)" >
+                            丝印:
+                        </div>
+                        <input type="radio" name="yinshua6" value="1" style="margin: 10px 0 0 10px"  disabled/><span>单面</span>
+                        <input type="radio" name="yinshua6" value="2"  style="margin: 10px 0 0 10px" disabled/><span>双面</span>
+                        <br/>
+                        <input type="radio" name="yinshua_color6" value="1" style="margin: 5px 0 0 10px" disabled/><span>一色</span>
+                        <input type="radio" name="yinshua_color6" value="2"  style="margin: 5px 0 0 10px" disabled/><span>双色</span>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            利润:
+                        </div>
+                        <input type="text" id="lirun6" class="form_input" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            单价:
+                        </div>
+                        <input type="text" id="danjia6" class="form_input" onfocus="this.blur()"/>
+                    </div>
+                    <input type="button" class="mybutton" id="submit6" value="报价" onclick="show_price6()">
+                    <input type="button" class="mybutton2"  id="clear6" value="清除" onclick="clear_data()">
+                </form>
+            </div>
+            <div class="medium_main_right" style="height: 750px">
+                <!--<input type="button" id="fujia" class="fujia" value="附加工艺" onclick="show_gongyi()">-->
+                <div class="gongyi_kind" id="gongyi_kind6">
+                    <h6 style="text-align: center;margin: 15px 0 0 0">附加工艺</h6>
+                    <div style="margin:10px 0 0 60px">
+                        <input type="checkbox" id="tiekou6" value="铁扣" /><span>铁扣</span>
+                        <input type="text" id="tiekou_input6" class="input_sec" value="0.2">
+                        <br/>
+                        <input type="checkbox" id="xts6" value="吸铁石" /><span>吸铁石</span>
+                        <input type="text" id="xts_input6" class="input_sec" value="0.35">
+                        <br/>
+                        <input type="checkbox" id="xkd6" value="小口袋"/><span>小口袋</span>
+                        <input type="text" id="xkd_input6" class="input_sec" value="0.7">
+                        <br/>
+                        <input type="checkbox" id="lalian6" value="拉链" /><span>拉链</span>
+                        <input type="text" id="lalian_input6" class="input_sec" value="1">
+                        <br/>
+                        <input type="checkbox" id="dacha6" value="打叉"/><span>打叉</span>
+                        <input type="text" id="dacha_input6" class="input_sec" value="0.2">
+                        <br/>
+                        <input type="checkbox" id="zhongliang6" value="重量" onclick="get_weight6()"/>
+                        <span>重量</span><input type="text" class="input_sec" id="zhongliang_input6" onmouseover="get_weight6()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="kddj6" value="kddj" />
+                        <span>快递单价</span><input type="text" class="input_sec" id="kddj_input6" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="yunfei6" value="运费" onclick="get_yunfei6()" />
+                        <span>运费</span><input type="text" id="yunfei_input6" class="input_sec" onmouseover="get_yunfei6()" style="width: 20%" >
+                        <br/>
+
+                        <input type="checkbox" id="zhixiang6" value="纸箱" /><span>纸箱</span>
+                        <input type="text" id="zhixiang_input6" class="input_sec" value="0.15">
+                        <br/>
+                        <input type="checkbox" id="ddbz6" value="单独包装" /><span>单独包装</span>
+                        <input type="text" id="ddbz_input6" class="input_sec" value="0.3">
+                        <br/>
+
+                        <input type="checkbox" id="ptfp6" value="ptfp" /><span>普通发票</span><input type="text" id="ptfp_input6" class="input_sec">
+
+                        <br/>
+                        <input type="checkbox" id="zyfp6" value="zyfp"/><span>专用发票</span><input type="text" id="zyfp_input6" class="input_sec">
+                        <br/>
+                        <input type="checkbox" id="qita6" value="其他" /><span>其他</span>
+                        <input type="text" id="qita_input6" class="input_sec">
+                        <br/>
+                        <input type="checkbox" id="bljg6" value="布料价格"/><span>布料价格</span><input type="text" id="bljg_input6" class="input_sec" value="12">
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <div id="medium_main7" class="medium_main" style="height: 640px;display: none">
+            <div class="medium_main_left" style="height: 600px;font-size: 12px;">
+
+                <form id="input_form7">
+                    <div class="form_group">
+                        <div class="form_lab">
+                            款式选项:
+                        </div>
+                        <select id="kuanshi7" class="kuanshi_kind" style="float: left" onchange="choose_kuanshi7()">
+                            <option value="1" selected>
+                                手提到底
+                            </option>
+                            <option value="2">
+                                手提过底
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            数量(个):
+                        </div>
+                        <!--<input type="text" id="number" class="form_input" οnkeyup="value=value.replace(/[^\-?\d.]/g,'')">-->
+                        <input type="text" id="number7" class="form_input" onkeyup="value=value.replace(/[^\d]/g,'')"  />
+                    </div>
+
+                    <div class="form_group">
+                        <div class="form_lab">
+                            宽(cm):
+                        </div>
+                        <input type="text" id="kuan7" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            高(cm):
+                        </div>
+                        <input type="text" id="gao7" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            侧面(cm):
+                        </div>
+                        <input type="text" id="cemian7" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+
+                    <div class="form_group">
+                        <div class="form_lab">
+                            克重(克/m<sup>2</sup>):
+                        </div>
+                        <input type="text" id="kezhong7" class="form_input" value="80"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            底板厚度(丝):
+                        </div>
+                        <input type="text" id="dbhd7" class="form_input"  onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            做工:
+                        </div>
+                        <input type="text" id="zuogong7" class="form_input" value="0.57" onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                        <input type="text" id="zuogong7_2" class="form_input" style="display: none" value="0.7" onkeyup="value=value.replace(/^\D*(\d*(?:\.\d{0,2})?).*$/g, '$1')" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">印刷:</div>
+                        <input type="radio" name="yinshua3" value="1" style="margin: 10px 0 0 10px"  /><span>单面</span>
+                        <input type="radio" name="yinshua3" value="2"  style="margin: 10px 0 0 10px" checked/><span>双面</span>
+                        <br/>
+                        <input type="radio" name="yinshua_color3" value="1" style="margin: 5px 0 0 10px" checked/><span>一色</span>
+                        <input type="radio" name="yinshua_color3" value="2"  style="margin: 5px 0 0 10px" /><span>双色</span>
+                        <input type="radio" name="yinshua_color3" value="3"  style="margin: 5px 0 0 10px" /><span>三色</span>
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            利润:
+                        </div>
+                        <input type="text" id="lirun7" class="form_input" />
+                    </div>
+                    <div class="form_group">
+                        <div class="form_lab">
+                            单价:
+                        </div>
+                        <input type="text" id="danjia7" class="form_input" onfocus="this.blur()"/>
+                    </div>
+                    <input type="button" class="mybutton" id="submit7" value="报价" onclick="show_price3()">
+                    <input type="button" class="mybutton2"  id="clear7" value="清除" onclick="clear_data()">
+                </form>
+            </div>
+            <div class="medium_main_right" style="height: 600px">
+                <!--<input type="button" id="fujia" class="fujia" value="附加工艺" onclick="show_gongyi()">-->
+                <div class="gongyi_kind" id="gongyi_kind7">
+                    <h6 style="text-align: center;margin: 15px 0 0 0">附加工艺</h6>
+                    <div style="margin:10px 0 0 60px">
+                        <input type="checkbox" id="dacha7" value="打叉"/><span>打叉</span>
+                        <input type="text" id="dacha_input7" class="input_sec" value="0.08">
+                        <br/>
+                        <input type="checkbox" id="bbdzjg7" value="包边倒针加固" /><span>包边倒针加固</span>
+                        <input type="text" id="bbdzjg_input7" class="input_sec" value="0.07">
+                        <br/>
+                        <input type="checkbox" id="niukou7" value="纽扣" /><span>纽扣</span>
+                        <input type="text" id="niukou_input7" class="input_sec" value="0.05">
+                        <br/>
+                        <input type="checkbox" id="zhongliang7" value="重量" onclick="get_weight7()"/>
+                        <span>重量</span><input type="text" class="input_sec" id="zhongliang_input7" onmouseover="get_weight7()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="kddj7" value="kddj" />
+                        <span>快递单价</span><input type="text" class="input_sec" id="kddj_input7" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="yunfei7" value="运费" onclick="get_yunfei7()" />
+                        <span>运费</span><input type="text" id="yunfei_input7" class="input_sec" onmouseover="get_yunfei7()" style="width: 20%" >
+                        <br/>
+                        <input type="checkbox" id="stjc7" value="手提加长" onclick="choose_jiachang3(this)"/><span>手提加长</span><input type="radio" name="jiachang3" value="0.09" style="margin: 10px 0 0 10px" disabled/><span>60</span><input type="radio" name="jiachang3" value="0.11"  style="margin: 10px 0 0 10px" disabled/><span>70</span>
+                        <br/>
+                        <input type="checkbox" id="zhixiang7" value="纸箱" /><span>纸箱</span><input type="text" id="zhixiang_input7" class="input_sec" value="0.04">
+                        <br/>
+                        <input type="checkbox" id="ddbz7" value="单独包装" /><span>单独包装</span><input type="text" id="ddbz_input7" class="input_sec">
+                        <br/>
+
+                        <input type="checkbox" id="ptfp7" value="ptfp" /><span>普通发票</span><input type="text" id="ptfp_input7" class="input_sec">
+
+                        <br/>
+                        <input type="checkbox" id="zyfp7" value="zyfp"/><span>专用发票</span><input type="text" id="zyfp_input7" class="input_sec">
+                        <br/>
+                        <input type="checkbox" id="bljg7" value="布料价格"/><span>布料价格</span><input type="text" id="bljg_input7" class="input_sec" value="12">
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+</body>
+
+</html>
